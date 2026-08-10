@@ -173,7 +173,7 @@ export const App: React.FC = () => {
           <div className="mitec-card" style={{ padding: '0', overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                misServicios@tec
+                misServicios@arteycultura
               </span>
               <Layers style={{ width: '16px', height: '16px', color: '#64748b' }} />
             </div>

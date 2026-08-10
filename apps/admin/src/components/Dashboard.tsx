@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import {
-  Users,
-  UserCheck,
-  Calendar,
-  Building2,
-  Music,
-  Plus,
+  Briefcase,
+  Layers,
   ChevronRight,
   ChevronDown,
   ChevronLeft,
-  Briefcase,
-  Layers,
-  Sparkles,
+  Plus,
+  Calendar,
+  Building2,
   QrCode,
-  FileCheck,
   X,
 } from 'lucide-react';
 import { StudentProfile, RehearsalEvent, RoomBooking } from '../shared';
@@ -35,7 +30,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
 
-  // Hero Announcement Banner Carousel State
+  // Hero Announcement Banner Carousel State (Vertical Poster Layout like MiTec)
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
@@ -43,9 +38,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       tag: 'EVENTO TEC',
       title: 'Ceremonia de BIENVENIDA GENERACIÓN 13',
       subtitle: 'Celebremos la llegada de una nueva generación de líderes que inspiran.',
-      date: 'Lunes 17 de agosto • 16:00 hrs',
+      date: 'Lunes 17 de agosto • 16:00 hrs (CDT)',
       location: 'Centro de Congresos, Campus Monterrey',
-      bg: 'linear-gradient(135deg, #0033a0 0%, #002677 100%)',
+      bg: 'linear-gradient(160deg, #0284c7 0%, #0033a0 100%)',
     },
     {
       id: 2,
@@ -54,29 +49,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
       subtitle: 'Ensamble Musical, Comedia Musical, Baile y Teatro de Tecnológico de Monterrey.',
       date: 'Viernes 21 de agosto • 15:00 hrs',
       location: 'Foro de Artes Escénicas',
-      bg: 'linear-gradient(135deg, #7c3aed 0%, #0033a0 100%)',
+      bg: 'linear-gradient(160deg, #7c3aed 0%, #0033a0 100%)',
     },
     {
       id: 3,
       tag: 'RECONOCIMIENTO',
-      title: 'Premios EXATEC a la Trayectoria Artística',
-      subtitle: 'Nominaciones abiertas para estudiantes destacados en artes escénicas.',
-      date: 'Cierre de convocatorias: 30 de agosto',
+      title: 'Premios EXATEC Trayectoria',
+      subtitle: 'Nominaciones abiertas para estudiantes destacados en artes escénicas Tec.',
+      date: 'Cierre: 30 de agosto',
       location: 'Nacional Tec',
-      bg: 'linear-gradient(135deg, #0284c7 0%, #059669 100%)',
+      bg: 'linear-gradient(160deg, #059669 0%, #0033a0 100%)',
     },
   ];
 
-  // Accordion open state for work@tec card
+  // Accordion open state for work@arteycultura card
   const [openSection, setOpenSection] = useState<string | null>('institucion');
 
-  // Widget Cards Customization Engine (+ AGREGAR TARJETA)
+  // Widget Cards Customization Engine (+ AGREGAR TARJETA) - Empty by default to avoid duplicate cards!
   const [showAddCardModal, setShowAddCardModal] = useState(false);
-  const [activeWidgets, setActiveWidgets] = useState<string[]>([
-    'agenda',
-    'salones',
-    'asistencia',
-  ]);
+  const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
 
   const toggleWidget = (widgetId: string) => {
     if (activeWidgets.includes(widgetId)) {
@@ -95,126 +86,149 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* 1. Hero Carousel Announcement Card (MiTec Style) */}
-      <div
-        className="mitec-card"
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: '20px',
-          background: slides[currentSlide].bg,
-          color: '#ffffff',
-          padding: '32px',
-          minHeight: '220px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          boxShadow: '0 10px 25px rgba(0,51,160,0.25)',
-          transition: 'all 0.4s ease',
-        }}
-      >
-        {/* Top Tag & Dots */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(8px)',
-              padding: '4px 12px',
-              borderRadius: '999px',
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-            }}
-          >
-            {slides[currentSlide].tag}
-          </span>
-
-          {/* Page Dots */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {slides.map((_, idx) => (
-              <span
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                style={{
-                  width: idx === currentSlide ? '24px' : '8px',
-                  height: '8px',
-                  borderRadius: '999px',
-                  background: idx === currentSlide ? '#ffffff' : 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Banner Main Content */}
-        <div style={{ margin: '16px 0', maxWidth: '640px' }}>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, lineHeight: 1.2, marginBottom: '8px', color: '#ffffff' }}>
-            {slides[currentSlide].title}
-          </h2>
-          <p style={{ fontSize: '0.95rem', opacity: 0.9, marginBottom: '12px', lineHeight: 1.4 }}>
-            {slides[currentSlide].subtitle}
-          </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f97316', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700 }}>
-            {slides[currentSlide].date} • {slides[currentSlide].location}
-          </div>
-        </div>
-
-        {/* Carousel Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'rgba(0,0,0,0.3)',
-            border: 'none',
-            color: '#fff',
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <ChevronLeft style={{ width: '20px', height: '20px' }} />
-        </button>
-
-        <button
-          onClick={nextSlide}
-          style={{
-            position: 'absolute',
-            right: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'rgba(0,0,0,0.3)',
-            border: 'none',
-            color: '#fff',
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <ChevronRight style={{ width: '20px', height: '20px' }} />
-        </button>
-      </div>
-
-      {/* 2. Main Layout Grid: work@tec Accordion Card + Modular Widget Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 380px) 1fr', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* Main 3-Column Layout Matching the MiTec Screenshot */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) minmax(320px, 380px) minmax(280px, 320px)', gap: '24px', alignItems: 'start' }}>
         
-        {/* Left Column: work@tec Accordion Card (With Colorful Left Strips) */}
-        <div className="mitec-card" style={{ padding: '0', overflow: 'hidden' }}>
+        {/* COLUMN 1: Vertical Announcement Poster Banner Card */}
+        <div
+          className="mitec-card"
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '20px',
+            background: slides[currentSlide].bg,
+            color: '#ffffff',
+            padding: '28px 24px',
+            minHeight: '460px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 10px 25px rgba(0,51,160,0.2)',
+          }}
+        >
+          {/* Top Tag & Dots */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              {/* Carousel Dots */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {slides.map((_, idx) => (
+                  <span
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    style={{
+                      width: idx === currentSlide ? '20px' : '8px',
+                      height: '8px',
+                      borderRadius: '999px',
+                      background: idx === currentSlide ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <span
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {slides[currentSlide].tag}
+              </span>
+            </div>
+
+            {/* Poster Header Text */}
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', opacity: 0.9, textTransform: 'uppercase', marginBottom: '4px' }}>
+                Tecnológico de Monterrey
+              </div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, opacity: 0.85, textTransform: 'uppercase' }}>
+                Líderes del mañana
+              </div>
+            </div>
+          </div>
+
+          {/* Main Title & Details */}
+          <div style={{ margin: '20px 0' }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '12px', color: '#ffffff' }}>
+              {slides[currentSlide].title}
+            </h2>
+            <p style={{ fontSize: '0.88rem', opacity: 0.9, marginBottom: '16px', lineHeight: 1.4 }}>
+              {slides[currentSlide].subtitle}
+            </p>
+            <div
+              style={{
+                background: '#f97316',
+                color: '#ffffff',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                display: 'inline-block',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
+              }}
+            >
+              {slides[currentSlide].date}
+            </div>
+          </div>
+
+          {/* Location Badge & Navigation Arrows */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '14px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, opacity: 0.9 }}>
+              📍 {slides[currentSlide].location}
+            </span>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={prevSlide}
+                style={{
+                  background: 'rgba(0,0,0,0.3)',
+                  border: 'none',
+                  color: '#fff',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <ChevronLeft style={{ width: '18px', height: '18px' }} />
+              </button>
+
+              <button
+                onClick={nextSlide}
+                style={{
+                  background: 'rgba(0,0,0,0.3)',
+                  border: 'none',
+                  color: '#fff',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <ChevronRight style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMN 2: work@arteycultura Accordion Card (With Colorful Left Strips) */}
+        <div className="mitec-card" style={{ padding: '0', overflow: 'hidden', height: '100%' }}>
           {/* Card Title Header */}
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '18px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
                 <Briefcase style={{ width: '20px', height: '20px' }} />
@@ -229,13 +243,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Accordion Rows with Colorful Left Border Strips */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Row 1: mi Institución & Alumnos (Yellow Strip) */}
+            {/* Row 1: mi Alumnado & Integrantes (Yellow Strip) */}
             <div className="mitec-accordion-item mitec-strip-amber" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <button
                 onClick={() => setOpenSection(openSection === 'institucion' ? null : 'institucion')}
                 style={{
                   width: '100%',
-                  padding: '14px 20px',
+                  padding: '14px 18px',
                   background: 'none',
                   border: 'none',
                   display: 'flex',
@@ -251,7 +265,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'institucion' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'institucion' && (
-                <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ padding: '0 18px 16px 18px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>Integrantes Activos:</span>
                     <strong style={{ color: '#0033a0' }}>{activeStudents.length} alumnos</strong>
@@ -267,13 +281,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Row 2: mis Ensayos & Llamados (Magenta Strip) */}
+            {/* Row 2: mis Ensayos & Llamados Generales (Magenta Strip) */}
             <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <button
                 onClick={() => setOpenSection(openSection === 'ensayos' ? null : 'ensayos')}
                 style={{
                   width: '100%',
-                  padding: '14px 20px',
+                  padding: '14px 18px',
                   background: 'none',
                   border: 'none',
                   display: 'flex',
@@ -289,7 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'ensayos' && (
-                <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ padding: '0 18px 16px 18px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span>Programados esta semana: <strong style={{ color: '#ec4899' }}>{rehearsals.length} ensayos</strong></span>
                   <button className="btn-secondary" onClick={() => setActiveTab('rehearsals')} style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
                     Ver Agenda de Ensayos <ChevronRight style={{ width: '14px', height: '14px' }} />
@@ -304,7 +318,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onClick={() => setOpenSection(openSection === 'salones' ? null : 'salones')}
                 style={{
                   width: '100%',
-                  padding: '14px 20px',
+                  padding: '14px 18px',
                   background: 'none',
                   border: 'none',
                   display: 'flex',
@@ -320,7 +334,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'salones' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'salones' && (
-                <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ padding: '0 18px 16px 18px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span>Solicitudes de Salón: <strong style={{ color: '#06b6d4' }}>{bookings.length} registradas</strong></span>
                   <button className="btn-secondary" onClick={() => setActiveTab('rooms')} style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
                     Gestionar Salones Tec <ChevronRight style={{ width: '14px', height: '14px' }} />
@@ -329,13 +343,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Row 4: mi Pase de Lista QR & Asistencias (Emerald Strip) */}
+            {/* Row 4: mi Pase de Lista QR & Asistencia (Emerald Strip) */}
             <div className="mitec-accordion-item mitec-strip-emerald">
               <button
                 onClick={() => setOpenSection(openSection === 'asistencia' ? null : 'asistencia')}
                 style={{
                   width: '100%',
-                  padding: '14px 20px',
+                  padding: '14px 18px',
                   background: 'none',
                   border: 'none',
                   display: 'flex',
@@ -351,7 +365,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'asistencia' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'asistencia' && (
-                <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ padding: '0 18px 16px 18px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span>Generador de Código QR de Ensayo en Vivo</span>
                   <button className="btn-secondary" onClick={() => setActiveTab('attendance')} style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
                     Abrir Escáner QR <ChevronRight style={{ width: '14px', height: '14px' }} />
@@ -362,70 +376,49 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Modular Customizable Widget Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignContent: 'start' }}>
+        {/* COLUMN 3: Modular Widgets + AGREGAR TARJETA Container */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Widget 1: Agenda Rapid Card */}
+          {/* Dynamically added widgets */}
           {activeWidgets.includes('agenda') && (
-            <div className="mitec-card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div className="mitec-card" style={{ padding: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>Próximos Ensayos Tec</h4>
+                  <Calendar style={{ width: '16px', height: '16px', color: '#7c3aed' }} />
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800 }}>Próximos Ensayos Tec</h4>
                 </div>
-                <span className="badge badge-purple">{rehearsals.length} Activos</span>
+                <button onClick={() => toggleWidget('agenda')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                  <X style={{ width: '14px', height: '14px' }} />
+                </button>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '14px' }}>
-                Ensamble Musical, Teatro y Comedia Musical Campus Laguna.
-              </p>
-              <button className="btn-primary" onClick={() => setActiveTab('rehearsals')} style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem' }}>
+              <button className="btn-primary" onClick={() => setActiveTab('rehearsals')} style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px' }}>
                 Ver Calendario Completo
               </button>
             </div>
           )}
 
-          {/* Widget 2: Salones Permisos Card */}
           {activeWidgets.includes('salones') && (
-            <div className="mitec-card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div className="mitec-card" style={{ padding: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Building2 style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>Salones & Permisos</h4>
+                  <Building2 style={{ width: '16px', height: '16px', color: '#06b6d4' }} />
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800 }}>Salones & Permisos</h4>
                 </div>
-                <span className="badge badge-active">Salones OK</span>
+                <button onClick={() => toggleWidget('salones')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                  <X style={{ width: '14px', height: '14px' }} />
+                </button>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '14px' }}>
-                Edificio A, Centro de Estudiantes y Aulas II.
-              </p>
-              <button className="btn-secondary" onClick={() => setActiveTab('rooms')} style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem' }}>
+              <button className="btn-secondary" onClick={() => setActiveTab('rooms')} style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '8px' }}>
                 Revisar Disponibilidad
               </button>
             </div>
           )}
 
-          {/* Widget 3: Asistencia QR Card */}
-          {activeWidgets.includes('asistencia') && (
-            <div className="mitec-card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <QrCode style={{ width: '18px', height: '18px', color: '#10b981' }} />
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800 }}>Pase de Lista QR</h4>
-                </div>
-                <span className="badge badge-active">En Vivo</span>
-              </div>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '14px' }}>
-                Toma asistencia rápida proyectando el QR en pantalla.
-              </p>
-              <button className="btn-secondary" onClick={() => setActiveTab('attendance')} style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem' }}>
-                Generar QR de Ensayo
-              </button>
-            </div>
-          )}
-
-          {/* Modular Add Card Button (+ AGREGAR TARJETA) */}
+          {/* Dotted AGREGAR TARJETA Placeholder Card */}
           <div
             className="add-card-placeholder"
             onClick={() => setShowAddCardModal(true)}
+            style={{ minHeight: '220px' }}
           >
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e0f2fe', color: '#0033a0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
               <Plus style={{ width: '24px', height: '24px' }} />
@@ -434,7 +427,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               AGREGAR TARJETA
             </span>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-              Personaliza tu Dashboard MiTec
+              Personaliza tu Dashboard
             </span>
           </div>
 
@@ -451,13 +444,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             style={{ width: '100%', maxWidth: '440px', padding: '24px' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Personalizar Tarjetas MiTec</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Personalizar Tarjetas</h3>
               <button onClick={() => setShowAddCardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
             </div>
             <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '16px' }}>
-              Selecciona las tarjetas que deseas fijar en tu página principal:
+              Selecciona las tarjetas adicionales que deseas fijar en tu página principal:
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -477,16 +470,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   type="checkbox"
                   checked={activeWidgets.includes('salones')}
                   onChange={() => toggleWidget('salones')}
-                  style={{ width: '18px', height: '18px' }}
-                />
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#f8fafc', borderRadius: '10px', cursor: 'pointer' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>📱 Pase de Lista QR</span>
-                <input
-                  type="checkbox"
-                  checked={activeWidgets.includes('asistencia')}
-                  onChange={() => toggleWidget('asistencia')}
                   style={{ width: '18px', height: '18px' }}
                 />
               </label>

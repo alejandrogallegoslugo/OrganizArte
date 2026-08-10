@@ -259,9 +259,7 @@ export const App: React.FC = () => {
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <Header currentCompany={currentCompany} setCurrentCompany={setCurrentCompany} companies={companies} />
-
-          <main style={{ flex: 1, padding: '28px', overflowY: 'auto' }}>
+          <main style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
             {loadingDb && (
               <div style={{ padding: '12px 20px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', color: '#38bdf8', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 ⚡ Sincronizando datos del sistema...
