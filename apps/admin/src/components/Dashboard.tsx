@@ -17,6 +17,8 @@ import {
   Sparkles,
   Save,
   Image as ImageIcon,
+  ExternalLink,
+  Link2,
 } from 'lucide-react';
 import { StudentProfile, RehearsalEvent, RoomBooking } from '../shared';
 
@@ -37,6 +39,8 @@ export interface AnnouncementSlide {
   location: string;
   bg: string;
   imageUrl?: string;
+  ctaText?: string;
+  ctaUrl?: string;
 }
 
 const DEFAULT_SLIDES: AnnouncementSlide[] = [
@@ -49,6 +53,8 @@ const DEFAULT_SLIDES: AnnouncementSlide[] = [
     location: 'Centro de Congresos, Campus Monterrey',
     bg: 'linear-gradient(160deg, #0284c7 0%, #0033a0 100%)',
     imageUrl: '/banner.png',
+    ctaText: 'Formulario de Registro',
+    ctaUrl: 'https://tec.mx',
   },
   {
     id: 2,
@@ -58,6 +64,8 @@ const DEFAULT_SLIDES: AnnouncementSlide[] = [
     date: 'Viernes 21 de agosto • 15:00 hrs',
     location: 'Foro de Artes Escénicas',
     bg: 'linear-gradient(160deg, #7c3aed 0%, #0033a0 100%)',
+    ctaText: 'Registrar Audición',
+    ctaUrl: 'https://forms.gle/audiciones',
   },
   {
     id: 3,
@@ -101,6 +109,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [formLocation, setFormLocation] = useState('');
   const [formBg, setFormBg] = useState('linear-gradient(160deg, #0284c7 0%, #0033a0 100%)');
   const [formImageUrl, setFormImageUrl] = useState('');
+  const [formCtaText, setFormCtaText] = useState('');
+  const [formCtaUrl, setFormCtaUrl] = useState('');
 
   // Save slides to localStorage
   useEffect(() => {
@@ -121,6 +131,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setFormLocation(slide.location);
       setFormBg(slide.bg);
       setFormImageUrl(slide.imageUrl || '');
+      setFormCtaText(slide.ctaText || '');
+      setFormCtaUrl(slide.ctaUrl || '');
     } else {
       setEditingSlideId(null);
       setFormTag('AVISO ARTÍSTICO');
@@ -130,6 +142,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setFormLocation('Tec Campus Laguna');
       setFormBg('linear-gradient(160deg, #ec4899 0%, #0033a0 100%)');
       setFormImageUrl('');
+      setFormCtaText('');
+      setFormCtaUrl('');
     }
     setShowEditSlideModal(true);
   };
@@ -152,6 +166,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 location: formLocation,
                 bg: formBg,
                 imageUrl: formImageUrl,
+                ctaText: formCtaText,
+                ctaUrl: formCtaUrl,
               }
             : s
         )
@@ -167,6 +183,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         location: formLocation,
         bg: formBg,
         imageUrl: formImageUrl,
+        ctaText: formCtaText,
+        ctaUrl: formCtaUrl,
       };
       setSlides((prev) => [...prev, newSlide]);
       setCurrentSlide(slides.length);
@@ -233,11 +251,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             overflow: 'hidden',
             borderRadius: '20px',
             background: activeSlide.imageUrl
-              ? `linear-gradient(rgba(0, 51, 160, 0.75), rgba(0, 20, 70, 0.9)), url(${activeSlide.imageUrl}) center/cover no-repeat`
+              ? `linear-gradient(rgba(0, 51, 160, 0.78), rgba(0, 20, 70, 0.92)), url(${activeSlide.imageUrl}) center/cover no-repeat`
               : activeSlide.bg,
             color: '#ffffff',
             padding: '28px 24px',
-            minHeight: '480px',
+            minHeight: '490px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -326,19 +344,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <p style={{ fontSize: '0.88rem', opacity: 0.9, marginBottom: '16px', lineHeight: 1.4 }}>
               {activeSlide.subtitle}
             </p>
-            <div
-              style={{
-                background: '#f97316',
-                color: '#ffffff',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                display: 'inline-block',
-                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
-              }}
-            >
-              {activeSlide.date}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  background: '#f97316',
+                  color: '#ffffff',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  display: 'inline-block',
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
+                }}
+              >
+                {activeSlide.date}
+              </div>
+
+              {/* Call to Action Button (Only visible if URL is provided!) */}
+              {activeSlide.ctaUrl && activeSlide.ctaUrl.trim().length > 0 && (
+                <a
+                  href={activeSlide.ctaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#ffffff',
+                    color: '#0033a0',
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                >
+                  {activeSlide.ctaText || 'Abrir Enlace / Formulario'} <ExternalLink style={{ width: '15px', height: '15px' }} />
+                </a>
+              )}
             </div>
           </div>
 
@@ -720,6 +766,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                   />
                 </div>
+              </div>
+
+              {/* CALL TO ACTION BUTTON FIELDS (Form / Enlace Opcional) */}
+              <div style={{ background: '#f0f9ff', padding: '12px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0369a1', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Link2 style={{ width: '14px', height: '14px' }} /> Call To Action (Botón de Enlace / Formulario Opcional)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>Texto del Botón</label>
+                    <input
+                      type="text"
+                      value={formCtaText}
+                      onChange={(e) => setFormCtaText(e.target.value)}
+                      placeholder="Ej. Llenar Formulario"
+                      style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '2px' }}>URL del Enlace</label>
+                    <input
+                      type="url"
+                      value={formCtaUrl}
+                      onChange={(e) => setFormCtaUrl(e.target.value)}
+                      placeholder="Ej. https://forms.gle/..."
+                      style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  ℹ️ Si dejas la URL vacía, el botón de enlace no se mostrará en el banner.
+                </span>
               </div>
 
               <div>
