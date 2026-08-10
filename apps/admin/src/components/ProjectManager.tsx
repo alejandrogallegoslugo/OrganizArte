@@ -449,6 +449,8 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detalles sobre el montaje, repertorio o logística del evento..."
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
+              />
+            </div>
             <button type="submit" className="btn-primary" style={{ padding: '12px', justifyContent: 'center', fontSize: '0.95rem', marginTop: '8px' }}>
               🚀 Guardar y Crear Proyecto
             </button>
