@@ -20,6 +20,14 @@ import {
   FileCheck,
   X,
   Menu,
+  CalendarClock,
+  CalendarDays,
+  Users,
+  Music2,
+  QrCode,
+  FileCheck2,
+  Palette,
+  Settings,
 } from 'lucide-react';
 import { StudentProfile } from '../shared';
 
@@ -62,9 +70,9 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
 
   // Bookmarks State
   const [bookmarks] = useState<string[]>([
-    'Aprobación de Alumnos',
-    'Agenda & Ensayos',
-    'Pase de Lista QR',
+    'Alumnos',
+    'Agenda',
+    'Asistencia',
   ]);
 
   // Reactions / Mood State
@@ -80,8 +88,21 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
     document.documentElement.setAttribute('data-theme', newTheme);
   };
 
-  // Auto-hide rule: Only show "Cambiar perfil" if user has MORE than 1 profile!
   const hasMultipleProfiles = userProfiles.length > 1;
+
+  // App modules for 9-dot grid launcher (Herramientas estilo Microsoft 365)
+  const appModules = [
+    { id: 'approvals', label: 'Alumnos', icon: <UserCheck style={{ width: '22px', height: '22px', color: '#0033a0' }} />, bg: '#e0f2fe' },
+    { id: 'availability', label: 'Horarios', icon: <CalendarClock style={{ width: '22px', height: '22px', color: '#06b6d4' }} />, bg: '#e0f2fe' },
+    { id: 'cast', label: 'Proyectos', icon: <Users style={{ width: '22px', height: '22px', color: '#7c3aed' }} />, bg: '#f3e8ff' },
+    { id: 'rehearsals', label: 'Agenda', icon: <CalendarDays style={{ width: '22px', height: '22px', color: '#ec4899' }} />, bg: '#fce7f3' },
+    { id: 'rooms', label: 'Salones', icon: <Building2 style={{ width: '22px', height: '22px', color: '#d97706' }} />, bg: '#fef3c7' },
+    { id: 'songs', label: 'Repertorio', icon: <Music2 style={{ width: '22px', height: '22px', color: '#10b981' }} />, bg: '#dcfce7' },
+    { id: 'attendance', label: 'Asistencia', icon: <QrCode style={{ width: '22px', height: '22px', color: '#f97316' }} />, bg: '#ffedd5' },
+    { id: 'justifications', label: 'Justificantes', icon: <FileCheck2 style={{ width: '22px', height: '22px', color: '#475569' }} />, bg: '#f1f5f9' },
+    { id: 'companies', label: 'Elencos', icon: <Palette style={{ width: '22px', height: '22px', color: '#be185d' }} />, bg: '#fce7f3' },
+    { id: 'campuses', label: 'Campuses', icon: <Settings style={{ width: '22px', height: '22px', color: '#334155' }} />, bg: '#e2e8f0' },
+  ];
 
   // Filter students for search dropdown
   const filteredStudents = searchQuery.trim()
@@ -413,21 +434,24 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           )}
         </div>
 
-        {/* Grid de Servicios */}
+        {/* 🎛️ 9-Dot App Grid Launcher: Herramientas (Microsoft 365 Style) */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => toggleMenu('grid')}
             style={{
-              background: activeMenu === 'grid' ? '#f1f5f9' : 'none',
-              border: 'none',
+              background: activeMenu === 'grid' ? '#e0f2fe' : '#f8fafc',
+              border: '1px solid #cbd5e1',
               color: activeMenu === 'grid' ? '#0033a0' : '#64748b',
               cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '8px'
+              padding: '6px 8px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
             }}
-            title="Grid de Servicios Arte y Cultura"
+            title="Herramientas y Módulos tipo Apps"
           >
-            <Grid style={{ width: '18px', height: '18px' }} />
+            <Grid style={{ width: '18px', height: '18px', color: '#0033a0' }} />
           </button>
 
           {activeMenu === 'grid' && (
@@ -435,42 +459,78 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '270px',
+              width: '320px',
               background: '#ffffff',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #cbd5e1',
               borderRadius: '16px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              padding: '12px',
-              zIndex: 300
+              boxShadow: '0 15px 35px rgba(0,0,0,0.18)',
+              overflow: 'hidden',
+              zIndex: 350
             }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>
-                Servicios del Ecosistema
+              {/* Blue Header Banner matching user screenshot */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0033a0 0%, #002677 100%)',
+                color: '#ffffff',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', fontFamily: 'Outfit, sans-serif' }}>
+                    Herramientas
+                  </h4>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>Arte y Cultura Tec</span>
+                </div>
+                <Grid style={{ width: '22px', height: '22px', opacity: 0.9 }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('availability'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#f0f9ff', cursor: 'pointer' }}>
-                  <Sparkles style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>IA Horarios</span>
-                </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('attendance'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#ecfdf5', cursor: 'pointer' }}>
-                  <QrCode style={{ width: '18px', height: '18px', color: '#10b981' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Escáner QR</span>
-                </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('rooms'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#fef3c7', cursor: 'pointer' }}>
-                  <Building2 style={{ width: '18px', height: '18px', color: '#d97706' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Salones Tec</span>
-                </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('songs'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#f3e8ff', cursor: 'pointer' }}>
-                  <Music style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Repertorio</span>
-                </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('approvals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#fce7f3', cursor: 'pointer' }}>
-                  <UserCheck style={{ width: '18px', height: '18px', color: '#ec4899' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Alumnos</span>
-                </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('rehearsals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#e0e7ff', cursor: 'pointer' }}>
-                  <Calendar style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Agenda</span>
-                </div>
+
+              {/* 2-Column App Grid List matching Microsoft 365 screenshot style */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px',
+                padding: '14px',
+                background: '#ffffff'
+              }}>
+                {appModules.map((app) => (
+                  <button
+                    key={app.id}
+                    onClick={() => {
+                      if (onSearchSelect) onSearchSelect(app.id);
+                      setActiveMenu(null);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #f1f5f9',
+                      background: '#ffffff',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                    className="app-module-hover"
+                  >
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      background: app.bg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {app.icon}
+                    </div>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                      {app.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}

@@ -49,16 +49,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const menuItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'dashboard', label: 'Inicio', icon: <Home style={{ width: 18, height: 18 }} /> },
-    { id: 'approvals', label: 'Aprobación Alumnos', icon: <UserCheck style={{ width: 18, height: 18 }} />, badge: pendingApprovalsCount },
-    { id: 'availability', label: 'Matriz & IA Horarios', icon: <CalendarClock style={{ width: 18, height: 18 }} /> },
-    { id: 'cast', label: 'Reparto & Personajes', icon: <Users style={{ width: 18, height: 18 }} /> },
-    { id: 'rehearsals', label: 'Agenda & Ensayos', icon: <CalendarDays style={{ width: 18, height: 18 }} /> },
-    { id: 'rooms', label: 'Salones Tec & Permisos', icon: <Building2 style={{ width: 18, height: 18 }} /> },
-    { id: 'songs', label: 'Repertorio & Guías', icon: <Music2 style={{ width: 18, height: 18 }} /> },
-    { id: 'attendance', label: 'Pase de Lista QR', icon: <QrCode style={{ width: 18, height: 18 }} /> },
+    { id: 'approvals', label: 'Alumnos', icon: <UserCheck style={{ width: 18, height: 18 }} />, badge: pendingApprovalsCount },
+    { id: 'availability', label: 'Horarios', icon: <CalendarClock style={{ width: 18, height: 18 }} /> },
+    { id: 'cast', label: 'Proyectos', icon: <Users style={{ width: 18, height: 18 }} /> },
+    { id: 'rehearsals', label: 'Agenda', icon: <CalendarDays style={{ width: 18, height: 18 }} /> },
+    { id: 'rooms', label: 'Salones', icon: <Building2 style={{ width: 18, height: 18 }} /> },
+    { id: 'songs', label: 'Repertorio', icon: <Music2 style={{ width: 18, height: 18 }} /> },
+    { id: 'attendance', label: 'Asistencia', icon: <QrCode style={{ width: 18, height: 18 }} /> },
     { id: 'justifications', label: 'Justificantes', icon: <FileCheck2 style={{ width: 18, height: 18 }} /> },
-    { id: 'companies', label: 'Compañías & Elencos', icon: <Palette style={{ width: 18, height: 18 }} /> },
-    { id: 'campuses', label: 'Configuración & Campuses', icon: <Settings style={{ width: 18, height: 18 }} /> },
+    { id: 'companies', label: 'Elencos', icon: <Palette style={{ width: 18, height: 18 }} /> },
+    { id: 'campuses', label: 'Campuses', icon: <Settings style={{ width: 18, height: 18 }} /> },
   ];
 
   const handleSelectTab = (tabId: AdminTab) => {
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Mobile Header Close Button */}
           {mobileOpen && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>Menú Arte y Cultura</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>Módulos Arte y Cultura</span>
               <button onClick={onCloseMobile} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                 <X style={{ width: 18, height: 18 }} />
               </button>
@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Section Header: SERVICIOS DE ARTE Y CULTURA */}
+          {/* Section Header: MÓDULOS */}
           <div style={{
             fontSize: '0.7rem',
             fontWeight: 800,
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             letterSpacing: '0.08em',
             padding: '8px 12px 6px 12px',
           }}>
-            SERVICIOS DE ARTE Y CULTURA
+            MÓDULOS DEL SISTEMA
           </div>
 
           {/* Services Links */}
@@ -195,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div style={{ paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', fontSize: '0.75rem', color: '#10b981', fontWeight: 700, marginBottom: '12px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-            <span>Estado de Servicios Tec: OK</span>
+            <span>Servicios Tec: OK</span>
           </div>
 
           <div style={{
