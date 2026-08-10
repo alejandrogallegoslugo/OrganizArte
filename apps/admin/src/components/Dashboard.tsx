@@ -240,8 +240,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* Main 3-Column Layout Matching the MiTec Screenshot */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) minmax(320px, 380px) minmax(280px, 320px)', gap: '24px', alignItems: 'start' }}>
+      {/* Main 3-Column Layout Matching the MiTec Screenshot (Responsive) */}
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) minmax(320px, 380px) minmax(280px, 320px)', gap: '24px', alignItems: 'start' }}>
         
         {/* COLUMN 1: Vertical Announcement Poster Banner Card */}
         <div

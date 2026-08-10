@@ -236,3 +236,40 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   padding: 20px;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE OVERRIDES FOR ADMIN PWA
+   ========================================== */
+@media (max-width: 900px) {
+  /* Dashboard layout: stack columns vertically on mobile */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Sidebar drawer behavior on mobile screen */
+  .sidebar-container {
+    position: fixed !important;
+    top: 64px;
+    bottom: 0;
+    left: -280px;
+    width: 260px !important;
+    height: calc(100vh - 64px) !important;
+    z-index: 500 !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.2) !important;
+  }
+
+  .sidebar-container.mobile-open {
+    left: 0 !important;
+  }
+
+  /* Hide center search bar on narrow screens to prevent overflow */
+  .topbar-search {
+    display: none !important;
+  }
+
+  /* Page padding adjustment */
+  main {
+    padding: 14px !important;
+  }
+}

@@ -19,6 +19,7 @@ import {
   Music,
   FileCheck,
   X,
+  Menu,
 } from 'lucide-react';
 import { StudentProfile } from '../shared';
 
@@ -35,6 +36,7 @@ interface MiTecTopBarProps {
   onLogout?: () => void;
   students?: StudentProfile[];
   pendingApprovalsCount?: number;
+  onToggleMobileSidebar?: () => void;
 }
 
 const DEFAULT_PROFILES: UserRoleProfile[] = [
@@ -48,6 +50,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
   onLogout,
   students = [],
   pendingApprovalsCount = 0,
+  onToggleMobileSidebar,
 }) => {
   const [activeProfileId, setActiveProfileId] = useState(userProfiles[0]?.id || 'director');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,35 +101,57 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: '0 16px',
       position: 'sticky',
       top: 0,
       zIndex: 200,
       boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      {/* Left: Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Left: Mobile Hamburger Toggle + Multi-Colored Vertical Bars + Brand Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        
+        {/* Mobile Sidebar Hamburger Toggle Button */}
+        {onToggleMobileSidebar && (
+          <button
+            onClick={onToggleMobileSidebar}
+            style={{
+              background: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#0f172a',
+              cursor: 'pointer',
+            }}
+            title="Abrir Menú Principal"
+          >
+            <Menu style={{ width: '20px', height: '20px' }} />
+          </button>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Icon Multi-Colored Vertical Bars */}
-          <div style={{ display: 'flex', gap: '3px', height: '28px', alignItems: 'center' }}>
-            <span style={{ width: '5px', height: '24px', background: '#f59e0b', borderRadius: '3px' }} />
-            <span style={{ width: '5px', height: '28px', background: '#ec4899', borderRadius: '3px' }} />
-            <span style={{ width: '5px', height: '22px', background: '#f97316', borderRadius: '3px' }} />
-            <span style={{ width: '5px', height: '26px', background: '#1d4ed8', borderRadius: '3px' }} />
-            <span style={{ width: '5px', height: '20px', background: '#06b6d4', borderRadius: '3px' }} />
+          <div style={{ display: 'flex', gap: '3px', height: '24px', alignItems: 'center' }}>
+            <span style={{ width: '4px', height: '20px', background: '#f59e0b', borderRadius: '2px' }} />
+            <span style={{ width: '4px', height: '24px', background: '#ec4899', borderRadius: '2px' }} />
+            <span style={{ width: '4px', height: '18px', background: '#f97316', borderRadius: '2px' }} />
+            <span style={{ width: '4px', height: '22px', background: '#1d4ed8', borderRadius: '2px' }} />
+            <span style={{ width: '4px', height: '16px', background: '#06b6d4', borderRadius: '2px' }} />
           </div>
 
           <div>
-            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', fontFamily: 'Outfit, sans-serif' }}>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', fontFamily: 'Outfit, sans-serif' }}>
               Arte y Cultura
             </span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ec4899', display: 'block', marginTop: '-4px' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ec4899', display: 'block', marginTop: '-4px' }}>
               colaboradores
             </span>
           </div>
         </div>
 
-        {/* 1. Cambiar perfil Button (AUTO-HIDES if user has only 1 profile!) */}
+        {/* Cambiar perfil Button (AUTO-HIDES if user has only 1 profile!) */}
         {hasMultipleProfiles && (
           <div style={{ position: 'relative' }}>
             <button
@@ -135,11 +160,11 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '6px 14px',
+                padding: '6px 10px',
                 background: activeMenu === 'profile' ? '#e0f2fe' : '#f1f5f9',
                 border: '1px solid #cbd5e1',
                 borderRadius: '8px',
-                fontSize: '0.82rem',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 color: '#0033a0',
                 cursor: 'pointer'
@@ -154,7 +179,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                 position: 'absolute',
                 top: '115%',
                 left: 0,
-                width: '240px',
+                width: '220px',
                 background: '#ffffff',
                 border: '1px solid #e2e8f0',
                 borderRadius: '12px',
@@ -172,13 +197,13 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                     style={{
                       width: '100%',
                       textAlign: 'left',
-                      padding: '9px 10px',
+                      padding: '8px 10px',
                       borderRadius: '8px',
                       background: p.id === activeProfileId ? '#e0f2fe' : 'transparent',
                       color: p.id === activeProfileId ? '#0033a0' : '#334155',
                       border: 'none',
                       fontWeight: p.id === activeProfileId ? 700 : 500,
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -196,8 +221,8 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
         )}
       </div>
 
-      {/* 2. Center: Global Search Bar with Live Autocomplete */}
-      <div style={{ flex: '0 1 480px', margin: '0 20px', position: 'relative' }}>
+      {/* Center: Global Search Bar */}
+      <div className="topbar-search" style={{ flex: '0 1 420px', margin: '0 12px', position: 'relative' }}>
         <Search style={{
           position: 'absolute',
           left: '14px',
@@ -218,11 +243,11 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           placeholder="Buscar personas o servicios..."
           style={{
             width: '100%',
-            padding: '10px 16px 10px 42px',
+            padding: '9px 16px 9px 40px',
             background: '#f8fafc',
             border: '1px solid #cbd5e1',
             borderRadius: '999px',
-            fontSize: '0.88rem',
+            fontSize: '0.85rem',
             color: '#0f172a',
             outline: 'none'
           }}
@@ -291,9 +316,9 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       </div>
 
       {/* Right: Quick Action Icons & Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         
-        {/* 3. 😃 Reacciones / Clima del Elenco */}
+        {/* Reacciones */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => toggleMenu('reactions')}
@@ -307,7 +332,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             }}
             title="Reacciones y Clima del Elenco"
           >
-            <Smile style={{ width: '20px', height: '20px' }} />
+            <Smile style={{ width: '18px', height: '18px' }} />
           </button>
 
           {activeMenu === 'reactions' && (
@@ -315,7 +340,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '240px',
+              width: '230px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '12px',
@@ -326,7 +351,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
                 Estado / Clima del Elenco
               </div>
-              <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#0033a0', marginBottom: '10px' }}>
+              <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#0033a0', marginBottom: '10px' }}>
                 {currentMood}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -344,7 +369,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           )}
         </div>
 
-        {/* 4. 🔖 Marcadores y Favoritos */}
+        {/* Marcadores */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => toggleMenu('bookmarks')}
@@ -358,7 +383,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             }}
             title="Marcadores y Favoritos"
           >
-            <Bookmark style={{ width: '20px', height: '20px' }} />
+            <Bookmark style={{ width: '18px', height: '18px' }} />
           </button>
 
           {activeMenu === 'bookmarks' && (
@@ -366,7 +391,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '250px',
+              width: '240px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '12px',
@@ -388,7 +413,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           )}
         </div>
 
-        {/* 5. 🎛️ App Grid Menu de Servicios */}
+        {/* Grid de Servicios */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => toggleMenu('grid')}
@@ -402,7 +427,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             }}
             title="Grid de Servicios Arte y Cultura"
           >
-            <Grid style={{ width: '20px', height: '20px' }} />
+            <Grid style={{ width: '18px', height: '18px' }} />
           </button>
 
           {activeMenu === 'grid' && (
@@ -410,48 +435,48 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '280px',
+              width: '270px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '16px',
               boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-              padding: '14px',
+              padding: '12px',
               zIndex: 300
             }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Servicios del Ecosistema
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('availability'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#f0f9ff', cursor: 'pointer' }}>
-                  <Sparkles style={{ width: '20px', height: '20px', color: '#06b6d4' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>IA Horarios</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('availability'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#f0f9ff', cursor: 'pointer' }}>
+                  <Sparkles style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>IA Horarios</span>
                 </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('attendance'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#ecfdf5', cursor: 'pointer' }}>
-                  <QrCode style={{ width: '20px', height: '20px', color: '#10b981' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Escáner QR</span>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('attendance'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#ecfdf5', cursor: 'pointer' }}>
+                  <QrCode style={{ width: '18px', height: '18px', color: '#10b981' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Escáner QR</span>
                 </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('rooms'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#fef3c7', cursor: 'pointer' }}>
-                  <Building2 style={{ width: '20px', height: '20px', color: '#d97706' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Salones Tec</span>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('rooms'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#fef3c7', cursor: 'pointer' }}>
+                  <Building2 style={{ width: '18px', height: '18px', color: '#d97706' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Salones Tec</span>
                 </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('songs'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#f3e8ff', cursor: 'pointer' }}>
-                  <Music style={{ width: '20px', height: '20px', color: '#7c3aed' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Repertorio</span>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('songs'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#f3e8ff', cursor: 'pointer' }}>
+                  <Music style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Repertorio</span>
                 </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('approvals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#fce7f3', cursor: 'pointer' }}>
-                  <UserCheck style={{ width: '20px', height: '20px', color: '#ec4899' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Alumnos</span>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('approvals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#fce7f3', cursor: 'pointer' }}>
+                  <UserCheck style={{ width: '18px', height: '18px', color: '#ec4899' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Alumnos</span>
                 </div>
-                <div onClick={() => { if (onSearchSelect) onSearchSelect('rehearsals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px', borderRadius: '10px', background: '#e0e7ff', cursor: 'pointer' }}>
-                  <Calendar style={{ width: '20px', height: '20px', color: '#4f46e5' }} />
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Agenda</span>
+                <div onClick={() => { if (onSearchSelect) onSearchSelect('rehearsals'); setActiveMenu(null); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px', borderRadius: '10px', background: '#e0e7ff', cursor: 'pointer' }}>
+                  <Calendar style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>Agenda</span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* 6. 🔔 Centro de Notificaciones */}
+        {/* Notificaciones */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => toggleMenu('notifications')}
@@ -466,14 +491,14 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             }}
             title="Notificaciones del Sistema"
           >
-            <Bell style={{ width: '20px', height: '20px' }} />
+            <Bell style={{ width: '18px', height: '18px' }} />
             {pendingApprovalsCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '4px',
                 right: '4px',
-                width: '8px',
-                height: '8px',
+                width: '7px',
+                height: '7px',
                 background: '#ec4899',
                 borderRadius: '50%'
               }} />
@@ -485,7 +510,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '280px',
+              width: '260px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '12px',
@@ -511,58 +536,13 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                     ✅ No tienes notificaciones pendientes.
                   </div>
                 )}
-                <div style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.8rem', color: '#475569' }}>
-                  📄 Conexión activa con Neon Postgres DB y Google Gemini Vision.
-                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* 7. ❓ Centro de Ayuda & Guía Tec */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => toggleMenu('help')}
-            style={{
-              background: activeMenu === 'help' ? '#f1f5f9' : 'none',
-              border: 'none',
-              color: activeMenu === 'help' ? '#0033a0' : '#64748b',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '8px'
-            }}
-            title="Ayuda y Soporte"
-          >
-            <HelpCircle style={{ width: '20px', height: '20px' }} />
-          </button>
-
-          {activeMenu === 'help' && (
-            <div style={{
-              position: 'absolute',
-              top: '120%',
-              right: 0,
-              width: '260px',
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
-              padding: '12px',
-              zIndex: 300
-            }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                Centro de Ayuda OrganizArte
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: '#334155' }}>
-                <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>❓ ¿Cómo procesar horarios con IA Gemini?</div>
-                <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>❓ ¿Cómo proyectar el QR de asistencia?</div>
-                <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>❓ Autorización de Salones Tec</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 8. 👤 User Profile Avatar Menu with Theme Toggle */}
-        <div style={{ position: 'relative', marginLeft: '6px', paddingLeft: '10px', borderLeft: '1px solid #e2e8f0' }}>
+        {/* User Profile Avatar Menu */}
+        <div style={{ position: 'relative', marginLeft: '4px', paddingLeft: '8px', borderLeft: '1px solid #e2e8f0' }}>
           <button
             onClick={() => toggleMenu('user')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -572,8 +552,8 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                 src="/logo.png"
                 alt={adminName}
                 style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '34px',
+                  height: '34px',
                   borderRadius: '50%',
                   objectFit: 'cover',
                   border: '2px solid #0033a0'
@@ -583,8 +563,8 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
                 position: 'absolute',
                 bottom: 0,
                 right: 0,
-                width: '10px',
-                height: '10px',
+                width: '9px',
+                height: '9px',
                 background: '#10b981',
                 border: '2px solid #ffffff',
                 borderRadius: '50%'
@@ -597,7 +577,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '240px',
+              width: '230px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '12px',
@@ -605,7 +585,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               padding: '12px',
               zIndex: 300
             }}>
-              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>{adminName}</div>
+              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>{adminName}</div>
               <div style={{ fontSize: '0.72rem', color: '#0033a0', fontWeight: 700, marginBottom: '10px' }}>
                 Director de Compañía • Tec Campus Laguna
               </div>

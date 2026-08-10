@@ -245,6 +245,8 @@ export const App: React.FC = () => {
     setCampuses((prev) => [newCampus, ...prev]);
   };
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)' }}>
       <MiTecTopBar
@@ -253,6 +255,7 @@ export const App: React.FC = () => {
         pendingApprovalsCount={pendingApprovalsCount}
         onSearchSelect={(tab) => setActiveTab(tab)}
         onLogout={handleLogout}
+        onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
@@ -262,6 +265,8 @@ export const App: React.FC = () => {
           pendingApprovalsCount={pendingApprovalsCount}
           adminUser={adminUser}
           onLogout={handleLogout}
+          mobileOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
         />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
