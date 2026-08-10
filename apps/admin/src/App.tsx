@@ -247,7 +247,13 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)' }}>
-      <MiTecTopBar adminName={adminUser.name} />
+      <MiTecTopBar
+        adminName={adminUser.name}
+        students={students}
+        pendingApprovalsCount={pendingApprovalsCount}
+        onSearchSelect={(tab) => setActiveTab(tab)}
+        onLogout={handleLogout}
+      />
 
       <div style={{ display: 'flex', flex: 1 }}>
         <Sidebar
