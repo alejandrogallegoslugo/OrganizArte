@@ -27,22 +27,14 @@ export const CampusManager: React.FC<CampusManagerProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Super Admin Header */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <ShieldCheck style={{ color: 'var(--accent-amber)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--accent-amber)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Configuración Global Super Admin
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Gestión de Campuses del Tec de Monterrey</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Habilita y administra los diferentes planteles universitarios registrados en la plataforma.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Settings style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Campuses
+        </h2>
 
         <button className="btn-primary" onClick={() => setShowCampusModal(true)}>
-          <Building style={{ width: '18px', height: '18px' }} /> + Registrar Nuevo Campus Tec
+          <Building style={{ width: '18px', height: '18px' }} /> + Agregar Campus
         </button>
       </div>
 

@@ -67,23 +67,14 @@ export const RoomManager: React.FC<RoomManagerProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Building2 style={{ color: 'var(--primary)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Préstamos de Espacios Tec
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Gestor de Salones de Ensayo y Permisos Digitales</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Crea, edita, borra salones de ensayo y aprueba reservaciones generando pases digitales con QR para la seguridad del campus.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Building2 style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Salones
+        </h2>
 
         <button className="btn-primary" onClick={handleOpenCreateRoom}>
-          <Plus style={{ width: '18px', height: '18px' }} /> + Agregar Salón de Ensamble Tec
+          <Plus style={{ width: '18px', height: '18px' }} /> + Agregar Salón
         </button>
       </div>
 

@@ -108,23 +108,14 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* Header Banner */}
-      <div className="mitec-card" style={{ padding: '24px 28px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <UserCheck style={{ color: '#0033a0', width: '22px', height: '22px' }} />
-            <span style={{ color: '#0033a0', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Base de Datos Global de Alumnos Tec
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>Directorio & Expedientes de Alumnos</h2>
-          <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
-            Gestiona el padrón global de integrantes del Campus, aprueba nuevas inscripciones y consulta expedientes con horarios cargados por IA.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <UserCheck style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Alumnos
+        </h2>
 
-        <button className="btn-primary" onClick={() => setShowCreateModal(true)} style={{ fontSize: '0.88rem', padding: '12px 20px' }}>
-          <UserPlus style={{ width: '18px', height: '18px' }} /> ➕ Dar de Alta Alumno + Horario IA
+        <button className="btn-primary" onClick={() => setShowCreateModal(true)} style={{ fontSize: '0.88rem', padding: '10px 18px' }}>
+          <UserPlus style={{ width: '18px', height: '18px' }} /> ➕ Agregar Alumno
         </button>
       </div>
 

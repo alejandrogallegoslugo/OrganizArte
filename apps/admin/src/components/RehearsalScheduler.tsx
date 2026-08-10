@@ -47,19 +47,11 @@ export const RehearsalScheduler: React.FC<RehearsalSchedulerProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Calendar style={{ color: 'var(--primary)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Gestión de Ensayos Tec
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Convocatorias de Ensayo - {companyName}</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Programa ensayos generales o seccionales. Se notificará a los alumnos por Push (iOS/Android) y Resend Email.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Calendar style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Agenda
+        </h2>
 
         <button className="btn-primary" onClick={() => setShowModal(true)}>
           <Plus style={{ width: '18px', height: '18px' }} /> Programar Ensayo

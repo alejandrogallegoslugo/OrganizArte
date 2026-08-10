@@ -40,18 +40,11 @@ export const JustificationsManager: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '24px 32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <FileText style={{ color: '#38bdf8', width: '20px', height: '20px' }} />
-          <span style={{ color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-            Gestión de Inasistencias Académicas y Médicas
-          </span>
-        </div>
-        <h2 style={{ fontSize: '1.5rem', color: '#f8fafc' }}>Revisión de Justificantes de Alumnos</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '4px' }}>
-          Aprueba o rechaza solicitudes de justificante por exámenes o fuerza mayor acompañados de comprobante.
-        </p>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FileText style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Justificantes
+        </h2>
       </div>
 
       {/* Justifications Table */}

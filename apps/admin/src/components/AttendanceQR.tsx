@@ -68,20 +68,11 @@ export const AttendanceQR: React.FC<AttendanceQRProps> = ({ rehearsals = [], stu
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header Banner */}
-      <div className="mitec-card" style={{ padding: '24px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <QrCode style={{ color: '#0033a0', width: '20px', height: '20px' }} />
-            <span style={{ color: '#0033a0', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Pase de Lista Digital en Tiempo Real
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>Proyector de Código QR Dinámico</h2>
-          <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
-            Proyecta este código QR en la pantalla del ensayo. Los alumnos lo escanean desde su PWA para registrar asistencia de inmediato.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <QrCode style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Asistencia
+        </h2>
 
         {/* Rehearsal Picker */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

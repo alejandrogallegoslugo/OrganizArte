@@ -166,27 +166,18 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Banner Header */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Sparkles style={{ color: 'var(--primary)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Gestión & Edición de Horarios Académicos
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Matriz de Disponibilidad & Editor de Clases</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Visualiza el mapa de calor de disponibilidad o edita manualmente las materias cargadas por cada alumno.
-          </p>
-        </div>
+      {/* Banner Header (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Sparkles style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Horarios
+        </h2>
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <button className="btn-secondary" onClick={() => setActiveSubTab(activeSubTab === 'heatmap' ? 'inspector' : 'heatmap')}>
-            {activeSubTab === 'heatmap' ? '📚 Inspector & Edición de Clases' : '🗺️ Mapa de Calor General'}
+            {activeSubTab === 'heatmap' ? '📚 Inspector de Clases' : '🗺️ Mapa de Calor'}
           </button>
           <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
-            <Upload style={{ width: '18px', height: '18px' }} /> Cargar Horario de Alumno
+            <Upload style={{ width: '18px', height: '18px' }} /> Cargar Horario
           </button>
         </div>
       </div>

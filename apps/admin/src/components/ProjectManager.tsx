@@ -197,19 +197,11 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
       {/* Header Banner */}
-      <div className="mitec-card" style={{ padding: '24px 28px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <FolderKanban style={{ color: '#0033a0', width: '22px', height: '22px' }} />
-            <span style={{ color: '#0033a0', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Gestor Central de Proyectos Arte y Cultura
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>Gestión de Proyectos, Elencos & Resumen Ejecutivo</h2>
-          <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
-            Edita detalles, administra elencos, visualiza la agenda de ensayos y consulta el mapa de calor de horarios de cada proyecto.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FolderKanban style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Proyectos
+        </h2>
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', gap: '10px' }}>

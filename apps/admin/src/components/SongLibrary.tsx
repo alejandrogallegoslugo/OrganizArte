@@ -42,22 +42,14 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({ songs, companyName, on
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Music style={{ color: 'var(--primary)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Repertorio Musical
-            </span>
-          </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Repositorio de Partituras y Guías de Audio</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Sube las partituras en PDF por instrumento y las guías de estudio interactivas para tus alumnos.
-          </p>
-        </div>
+      {/* Header Banner (Simplified) */}
+      <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
+        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Music style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Repertorio
+        </h2>
 
         <button className="btn-primary" onClick={() => setShowModal(true)}>
-          <Plus style={{ width: '18px', height: '18px' }} /> Agregar Obra al Repertorio
+          <Plus style={{ width: '18px', height: '18px' }} /> + Agregar Obra
         </button>
       </div>
 
