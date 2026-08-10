@@ -429,12 +429,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 }}
               >
                 <ChevronRight style={{ width: '18px', height: '18px' }} />
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* COLUMN 2: work@arteycultura Accordion Card (With Colorful Left Strips) */}
+        {/* COLUMN 2: crear@arteycultura Accordion Card (With Colorful Left Strips) */}
         <div className="mitec-card" style={{ padding: '0', overflow: 'hidden', height: '100%' }}>
           {/* Card Title Header */}
           <div style={{ padding: '18px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -443,7 +441,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <Briefcase style={{ width: '20px', height: '20px' }} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>work@arteycultura</h3>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>crear@arteycultura</h3>
                 <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Gestión de la Compañía Artística</span>
               </div>
             </div>
@@ -452,7 +450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Accordion Rows with Colorful Left Border Strips */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Row 1: mi Alumnado & Integrantes (Yellow Strip) */}
+            {/* Row 1: Alumnado & Integrantes (Yellow Strip) */}
             <div className="mitec-accordion-item mitec-strip-amber" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <button
                 onClick={() => setOpenSection(openSection === 'institucion' ? null : 'institucion')}
@@ -470,7 +468,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   color: '#0f172a',
                 }}
               >
-                <span>mi Alumnado & Integrantes</span>
+                <span>Alumnado & Integrantes</span>
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'institucion' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'institucion' && (
@@ -490,7 +488,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Row 2: mis Ensayos & Llamados Generales (Magenta Strip) */}
+            {/* Row 2: Ensayos & Llamados Generales (Magenta Strip) */}
             <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <button
                 onClick={() => setOpenSection(openSection === 'ensayos' ? null : 'ensayos')}
@@ -508,7 +506,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   color: '#0f172a',
                 }}
               >
-                <span>mis Ensayos & Llamados Generales</span>
+                <span>Ensayos & Llamados Generales</span>
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'ensayos' && (
@@ -521,7 +519,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Row 3: mis Salones Tec & Permisos (Cyan Strip) */}
+            {/* Row 3: Salones Tec & Permisos (Cyan Strip) */}
             <div className="mitec-accordion-item mitec-strip-cyan" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <button
                 onClick={() => setOpenSection(openSection === 'salones' ? null : 'salones')}
@@ -539,7 +537,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   color: '#0f172a',
                 }}
               >
-                <span>mis Salones Tec & Permisos</span>
+                <span>Salones Tec & Permisos</span>
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'salones' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'salones' && (
@@ -552,7 +550,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
 
-            {/* Row 4: mi Pase de Lista QR & Asistencia (Emerald Strip) */}
+            {/* Row 4: Pase de Lista QR & Asistencia (Emerald Strip) */}
             <div className="mitec-accordion-item mitec-strip-emerald">
               <button
                 onClick={() => setOpenSection(openSection === 'asistencia' ? null : 'asistencia')}
@@ -570,7 +568,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   color: '#0f172a',
                 }}
               >
-                <span>mi Pase de Lista QR & Asistencia</span>
+                <span>Pase de Lista QR & Asistencia</span>
                 <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'asistencia' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'asistencia' && (

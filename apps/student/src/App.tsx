@@ -199,7 +199,7 @@ export const App: React.FC = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} />
-                    <span>mi Horario & IA Scanner</span>
+                    <span>Horario & IA Scanner</span>
                   </div>
                   <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'horario' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
@@ -213,7 +213,7 @@ export const App: React.FC = () => {
                 )}
               </div>
 
-              {/* Service 2: mis Ensayos & Llamados (Magenta Strip) */}
+              {/* Service 2: Ensayos & Llamados (Magenta Strip) */}
               <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
                 <button
                   onClick={() => setOpenService(openService === 'ensayos' ? null : 'ensayos')}
@@ -233,7 +233,7 @@ export const App: React.FC = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Calendar style={{ width: '16px', height: '16px', color: '#ec4899' }} />
-                    <span>mis Ensayos & Agenda</span>
+                    <span>Ensayos & Agenda</span>
                   </div>
                   <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
@@ -244,7 +244,7 @@ export const App: React.FC = () => {
                 )}
               </div>
 
-              {/* Service 3: mi Repertorio & Audio Player (Purple Strip) */}
+              {/* Service 3: Repertorio & Audio Player (Purple Strip) */}
               <div className="mitec-accordion-item mitec-strip-purple">
                 <button
                   onClick={() => setOpenService(openService === 'repertorio' ? null : 'repertorio')}
@@ -264,7 +264,7 @@ export const App: React.FC = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Music style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
-                    <span>mi Repertorio & Audio</span>
+                    <span>Repertorio & Audio</span>
                   </div>
                   <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
