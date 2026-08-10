@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle } from 'lucide-react';
+import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
 interface AvailabilityHeatmapProps {
