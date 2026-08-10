@@ -21,6 +21,8 @@ import {
   Plus,
   Edit,
   Layers,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { StudentProfile, DisciplineType, StudentSchedule, ArtisticProject } from '../shared';
 import { AdminCreateStudentModal } from './AdminCreateStudentModal';
@@ -32,7 +34,7 @@ interface StudentManagerProps {
   onApproveStudent: (studentId: string, company: string, discipline: DisciplineType, section: string) => void;
   onRejectStudent: (studentId: string) => void;
   onAddDirectStudent?: (newStudent: StudentProfile, parsedCourses: any[], validityPeriod: string, validUntil: string) => void;
-  onUpdateStudent?: (updatedStudent: StudentProfile) => void;
+  onUpdateStudent?: (updatedStudent: StudentProfile, updatedProjectIds: string[]) => void;
   onEnrollStudentInProject?: (studentId: string, projectId: string) => void;
 }
 
@@ -58,11 +60,11 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const [editName, setEditName] = useState('');
   const [editMatricula, setEditMatricula] = useState('');
   const [editEmail, setEditEmail] = useState('');
-  const [editCompany, setEditCompany] = useState('');
   const [editDiscipline, setEditDiscipline] = useState<DisciplineType>('MUSICA');
   const [editSection, setEditSection] = useState('');
   const [editCampus, setEditCampus] = useState('');
   const [editStatus, setEditStatus] = useState<'ACTIVE' | 'PENDING_APPROVAL' | 'REJECTED'>('ACTIVE');
+  const [editSelectedProjectIds, setEditSelectedProjectIds] = useState<string[]>([]);
 
   // Selected Student for Approval Modal
   const [approveStudentModal, setApproveStudentModal] = useState<StudentProfile | null>(null);
@@ -102,23 +104,39 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     setEditName(student.name);
     setEditMatricula(student.matricula);
     setEditEmail(student.email);
-    setEditCompany(student.companyName);
     setEditDiscipline(student.discipline);
     setEditSection(student.section);
     setEditCampus(student.campus);
     setEditStatus(student.status);
+
+    // Populate initial project IDs for checkboxes
+    const studentEnrolledProjectIds = projects
+      .filter((p) => p.enrolledStudentIds.includes(student.id) || p.characters.some((c) => c.assignedStudentId === student.id))
+      .map((p) => p.id);
+
+    setEditSelectedProjectIds(studentEnrolledProjectIds);
+  };
+
+  const toggleProjectCheckbox = (projectId: string) => {
+    setEditSelectedProjectIds((prev) =>
+      prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId]
+    );
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editStudent || !editName.trim()) return;
 
+    // Derived primary company name from selected projects or default
+    const primaryProj = projects.find((p) => editSelectedProjectIds.includes(p.id));
+    const derivedCompany = primaryProj ? primaryProj.name : editStudent.companyName || 'Compañía Arte y Cultura';
+
     const updated: StudentProfile = {
       ...editStudent,
       name: editName,
       matricula: editMatricula,
       email: editEmail,
-      companyName: editCompany,
+      companyName: derivedCompany,
       discipline: editDiscipline,
       section: editSection,
       campus: editCampus,
@@ -126,7 +144,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     };
 
     if (onUpdateStudent) {
-      onUpdateStudent(updated);
+      onUpdateStudent(updated, editSelectedProjectIds);
     }
     setEditStudent(null);
   };
@@ -307,9 +325,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
               <tr>
                 <th>Alumno / Correo</th>
                 <th>Matrícula</th>
-                <th>Compañía Principal</th>
                 <th>Disciplina & Sección</th>
-                <th>Proyectos Activos</th>
+                <th>Proyectos & Compañías Asignadas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -334,23 +351,19 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                         {std.matricula}
                       </span>
                     </td>
-                    <td style={{ color: '#334155', fontWeight: 700 }}>{std.companyName}</td>
                     <td>
                       <span className="badge badge-purple">{std.discipline}</span>
                       <span style={{ marginLeft: '6px', fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>{std.section}</span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {stdProjs.slice(0, 2).map((p) => (
-                          <span key={p.id} style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
-                            {p.name.split(' ')[0]}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {stdProjs.map((p) => (
+                          <span key={p.id} style={{ background: '#f0f9ff', color: '#0033a0', border: '1px solid #bae6fd', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                            🎭 {p.name}
                           </span>
                         ))}
-                        {stdProjs.length > 2 && (
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800 }}>+{stdProjs.length - 2}</span>
-                        )}
                         {stdProjs.length === 0 && (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>1 Proyecto</span>
+                          <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin proyecto asignado</span>
                         )}
                       </div>
                     </td>
@@ -369,7 +382,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                           onClick={() => openEditModal(std)}
                           className="btn-secondary"
                           style={{ fontSize: '0.78rem', padding: '5px 10px' }}
-                          title="Editar Datos del Alumno"
+                          title="Editar Datos y Proyectos del Alumno"
                         >
                           <Edit style={{ width: '14px', height: '14px', color: '#d97706' }} /> Editar
                         </button>
@@ -398,7 +411,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
               })}
               {filteredList.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '30px' }}>
+                  <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '30px' }}>
                     No se encontraron alumnos con los filtros seleccionados.
                   </td>
                 </tr>
@@ -409,13 +422,13 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
       </div>
 
-      {/* EDIT STUDENT MODAL */}
+      {/* EDIT STUDENT MODAL WITH CHECKBOXES MULTI-SELECT FOR PROJECTS */}
       {editStudent && (
         <div className="modal-backdrop" onClick={() => setEditStudent(null)}>
           <div
             className="mitec-card"
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '560px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+            style={{ width: '100%', maxWidth: '620px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '90vh', overflowY: 'auto' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -468,22 +481,52 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                 </div>
               </div>
 
+              {/* CHECKBOX MULTI-SELECT FOR PROJECTS & COMPANYS */}
+              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0033a0', display: 'block', marginBottom: '6px' }}>
+                  🎭 Proyectos & Compañías Asignadas (Selecciona 1 o más con [✓]):
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                  {projects.map((p) => {
+                    const isChecked = editSelectedProjectIds.includes(p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleProjectCheckbox(p.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          background: isChecked ? '#f0f9ff' : '#ffffff',
+                          border: isChecked ? '1px solid #0033a0' : '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}} // Handled by container onClick
+                          style={{ width: '16px', height: '16px', accentColor: '#0033a0', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '0.88rem', fontWeight: isChecked ? 800 : 600, color: isChecked ? '#0033a0' : '#334155' }}>
+                          🎭 {p.name}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: 'auto', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
+                          {p.type === 'COMPANY_SEMESTER' ? 'Compañía Semestral' : p.type === 'SPECIAL_EVENT' ? 'Evento Especial' : 'Masterclass'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                    Compañía Principal
-                  </label>
-                  <input
-                    type="text"
-                    value={editCompany}
-                    onChange={(e) => setEditCompany(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                    Disciplina
+                    Disciplina Artística
                   </label>
                   <select
                     value={editDiscipline}
@@ -497,9 +540,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     <option value="STAFF">Staff / Producción</option>
                   </select>
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                     Sección / Instrumento
@@ -511,21 +552,21 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                    Estatus
-                  </label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as any)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
-                  >
-                    <option value="ACTIVE">🟢 Activo</option>
-                    <option value="PENDING_APPROVAL">⏳ Pendiente</option>
-                    <option value="REJECTED">🔴 Rechazado / Inactivo</option>
-                  </select>
-                </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Estatus en Padrón Tec
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as any)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                >
+                  <option value="ACTIVE">🟢 Activo</option>
+                  <option value="PENDING_APPROVAL">⏳ Pendiente</option>
+                  <option value="REJECTED">🔴 Rechazado / Inactivo</option>
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
@@ -568,10 +609,10 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
             <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
               <div><strong>Matrícula:</strong> <span style={{ color: '#0033a0', fontWeight: 800, fontFamily: 'monospace' }}>{detailStudent.matricula}</span></div>
               <div><strong>Correo:</strong> {detailStudent.email}</div>
-              <div><strong>Compañía:</strong> {detailStudent.companyName}</div>
               <div><strong>Disciplina:</strong> {detailStudent.discipline}</div>
               <div><strong>Sección:</strong> {detailStudent.section}</div>
               <div><strong>Campus:</strong> {detailStudent.campus}</div>
+              <div><strong>Estatus:</strong> <span style={{ color: '#059669', fontWeight: 800 }}>{detailStudent.status}</span></div>
             </div>
 
             {/* Assigned Projects & Multi-Enrollment Form */}
@@ -585,7 +626,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {studentProjects.map((p) => (
                   <span key={p.id} style={{ background: '#f3e8ff', color: '#6b21a8', padding: '6px 12px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #d8b4fe' }}>
-                    🎭 {p.name} ({p.type === 'SPECIAL_EVENT' ? 'Evento' : 'Compañía'})
+                    🎭 {p.name} ({p.type === 'COMPANY_SEMESTER' ? 'Compañía' : p.type === 'SPECIAL_EVENT' ? 'Evento' : 'Masterclass'})
                   </span>
                 ))}
                 {studentProjects.length === 0 && (

@@ -249,9 +249,23 @@ export const App: React.FC = () => {
                 onApproveStudent={handleApproveStudent}
                 onRejectStudent={handleRejectStudent}
                 onAddDirectStudent={handleAddDirectStudent}
-                onUpdateStudent={(updatedStd) =>
-                  setStudents((prev) => prev.map((s) => (s.id === updatedStd.id ? updatedStd : s)))
-                }
+                onUpdateStudent={(updatedStd, updatedProjectIds) => {
+                  setStudents((prev) => prev.map((s) => (s.id === updatedStd.id ? updatedStd : s)));
+                  if (updatedProjectIds) {
+                    setProjects((prev) =>
+                      prev.map((p) => {
+                        const shouldBeEnrolled = updatedProjectIds.includes(p.id);
+                        const isEnrolled = p.enrolledStudentIds.includes(updatedStd.id);
+                        if (shouldBeEnrolled && !isEnrolled) {
+                          return { ...p, enrolledStudentIds: [...p.enrolledStudentIds, updatedStd.id] };
+                        } else if (!shouldBeEnrolled && isEnrolled) {
+                          return { ...p, enrolledStudentIds: p.enrolledStudentIds.filter((id) => id !== updatedStd.id) };
+                        }
+                        return p;
+                      })
+                    );
+                  }
+                }}
                 onEnrollStudentInProject={(studentId, projectId) => {
                   setProjects((prev) =>
                     prev.map((p) =>
