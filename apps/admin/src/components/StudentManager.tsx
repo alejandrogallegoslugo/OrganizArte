@@ -19,6 +19,8 @@ import {
   Phone,
   X,
   Plus,
+  Edit,
+  Layers,
 } from 'lucide-react';
 import { StudentProfile, DisciplineType, StudentSchedule, ArtisticProject } from '../shared';
 import { AdminCreateStudentModal } from './AdminCreateStudentModal';
@@ -30,6 +32,8 @@ interface StudentManagerProps {
   onApproveStudent: (studentId: string, company: string, discipline: DisciplineType, section: string) => void;
   onRejectStudent: (studentId: string) => void;
   onAddDirectStudent?: (newStudent: StudentProfile, parsedCourses: any[], validityPeriod: string, validUntil: string) => void;
+  onUpdateStudent?: (updatedStudent: StudentProfile) => void;
+  onEnrollStudentInProject?: (studentId: string, projectId: string) => void;
 }
 
 export const StudentManager: React.FC<StudentManagerProps> = ({
@@ -39,6 +43,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   onApproveStudent,
   onRejectStudent,
   onAddDirectStudent,
+  onUpdateStudent,
+  onEnrollStudentInProject,
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'pending' | 'rejected'>('active');
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +53,17 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   // Selected Student for Full Profile Detail Modal (Expediente)
   const [detailStudent, setDetailStudent] = useState<StudentProfile | null>(null);
 
+  // Edit Student Modal State
+  const [editStudent, setEditStudent] = useState<StudentProfile | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editMatricula, setEditMatricula] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editCompany, setEditCompany] = useState('');
+  const [editDiscipline, setEditDiscipline] = useState<DisciplineType>('MUSICA');
+  const [editSection, setEditSection] = useState('');
+  const [editCampus, setEditCampus] = useState('');
+  const [editStatus, setEditStatus] = useState<'ACTIVE' | 'PENDING_APPROVAL' | 'REJECTED'>('ACTIVE');
+
   // Selected Student for Approval Modal
   const [approveStudentModal, setApproveStudentModal] = useState<StudentProfile | null>(null);
   const [assignedCompany, setAssignedCompany] = useState('Ensamble Musical Tec');
@@ -54,6 +71,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const [assignedSection, setAssignedSection] = useState('Saxofón Alto');
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Enroll in new project select state
+  const [enrollProjectId, setEnrollProjectId] = useState('');
 
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
   const pendingStudents = students.filter((s) => s.status === 'PENDING_APPROVAL');
@@ -76,6 +96,40 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
     return matchesSearch && matchesDiscipline;
   });
+
+  const openEditModal = (student: StudentProfile) => {
+    setEditStudent(student);
+    setEditName(student.name);
+    setEditMatricula(student.matricula);
+    setEditEmail(student.email);
+    setEditCompany(student.companyName);
+    setEditDiscipline(student.discipline);
+    setEditSection(student.section);
+    setEditCampus(student.campus);
+    setEditStatus(student.status);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editStudent || !editName.trim()) return;
+
+    const updated: StudentProfile = {
+      ...editStudent,
+      name: editName,
+      matricula: editMatricula,
+      email: editEmail,
+      companyName: editCompany,
+      discipline: editDiscipline,
+      section: editSection,
+      campus: editCampus,
+      status: editStatus,
+    };
+
+    if (onUpdateStudent) {
+      onUpdateStudent(updated);
+    }
+    setEditStudent(null);
+  };
 
   const handleOpenApproveModal = (student: StudentProfile) => {
     setApproveStudentModal(student);
@@ -104,6 +158,15 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
           p.characters.some((c) => c.assignedStudentId === detailStudent.id)
       )
     : [];
+
+  const handleEnrollInProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detailStudent || !enrollProjectId) return;
+    if (onEnrollStudentInProject) {
+      onEnrollStudentInProject(detailStudent.id, enrollProjectId);
+    }
+    setEnrollProjectId('');
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -246,62 +309,93 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                 <th>Matrícula</th>
                 <th>Compañía Principal</th>
                 <th>Disciplina & Sección</th>
-                <th>Campus</th>
+                <th>Proyectos Activos</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredList.map((std) => (
-                <tr key={std.id}>
-                  <td>
-                    <div style={{ fontWeight: 800, color: '#0f172a' }}>{std.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#0033a0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Mail style={{ width: '12px', height: '12px' }} /> {std.email}
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ fontFamily: 'monospace', color: '#0033a0', fontWeight: 800, background: '#f0f9ff', padding: '2px 8px', borderRadius: '4px' }}>
-                      {std.matricula}
-                    </span>
-                  </td>
-                  <td style={{ color: '#334155', fontWeight: 700 }}>{std.companyName}</td>
-                  <td>
-                    <span className="badge badge-purple">{std.discipline}</span>
-                    <span style={{ marginLeft: '6px', fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>{std.section}</span>
-                  </td>
-                  <td style={{ fontSize: '0.82rem', color: '#64748b' }}>{std.campus}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        onClick={() => setDetailStudent(std)}
-                        className="btn-secondary"
-                        style={{ fontSize: '0.78rem', padding: '5px 10px' }}
-                        title="Ver Expediente Completo"
-                      >
-                        <Eye style={{ width: '14px', height: '14px', color: '#0033a0' }} /> Ver Expediente
-                      </button>
+              {filteredList.map((std) => {
+                const stdProjs = projects.filter(
+                  (p) =>
+                    p.enrolledStudentIds.includes(std.id) ||
+                    p.characters.some((c) => c.assignedStudentId === std.id)
+                );
 
-                      {activeTab === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleOpenApproveModal(std)}
-                            style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
-                          >
-                            <CheckCircle style={{ width: '14px', height: '14px' }} /> Aprobar
-                          </button>
+                return (
+                  <tr key={std.id}>
+                    <td>
+                      <div style={{ fontWeight: 800, color: '#0f172a' }}>{std.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#0033a0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Mail style={{ width: '12px', height: '12px' }} /> {std.email}
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontFamily: 'monospace', color: '#0033a0', fontWeight: 800, background: '#f0f9ff', padding: '2px 8px', borderRadius: '4px' }}>
+                        {std.matricula}
+                      </span>
+                    </td>
+                    <td style={{ color: '#334155', fontWeight: 700 }}>{std.companyName}</td>
+                    <td>
+                      <span className="badge badge-purple">{std.discipline}</span>
+                      <span style={{ marginLeft: '6px', fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>{std.section}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {stdProjs.slice(0, 2).map((p) => (
+                          <span key={p.id} style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                            {p.name.split(' ')[0]}
+                          </span>
+                        ))}
+                        {stdProjs.length > 2 && (
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800 }}>+{stdProjs.length - 2}</span>
+                        )}
+                        {stdProjs.length === 0 && (
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>1 Proyecto</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => setDetailStudent(std)}
+                          className="btn-secondary"
+                          style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                          title="Ver Expediente Completo"
+                        >
+                          <Eye style={{ width: '14px', height: '14px', color: '#0033a0' }} /> Expediente
+                        </button>
 
-                          <button
-                            onClick={() => onRejectStudent(std.id)}
-                            style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '6px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
-                          >
-                            <XCircle style={{ width: '14px', height: '14px' }} /> Rechazar
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button
+                          onClick={() => openEditModal(std)}
+                          className="btn-secondary"
+                          style={{ fontSize: '0.78rem', padding: '5px 10px' }}
+                          title="Editar Datos del Alumno"
+                        >
+                          <Edit style={{ width: '14px', height: '14px', color: '#d97706' }} /> Editar
+                        </button>
+
+                        {activeTab === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleOpenApproveModal(std)}
+                              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              <CheckCircle style={{ width: '14px', height: '14px' }} /> Aprobar
+                            </button>
+
+                            <button
+                              onClick={() => onRejectStudent(std.id)}
+                              style={{ background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '6px', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              <XCircle style={{ width: '14px', height: '14px' }} /> Rechazar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredList.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '30px' }}>
@@ -315,7 +409,139 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
       </div>
 
-      {/* STUDENT FULL PROFILE & FILE MODAL (Expediente Completo del Alumno) */}
+      {/* EDIT STUDENT MODAL */}
+      {editStudent && (
+        <div className="modal-backdrop" onClick={() => setEditStudent(null)}>
+          <div
+            className="mitec-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '560px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit style={{ color: '#0033a0', width: '20px', height: '20px' }} /> Editar Datos del Alumno
+              </h3>
+              <button onClick={() => setEditStudent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Nombre Completo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Matrícula *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editMatricula}
+                    onChange={(e) => setEditMatricula(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', fontFamily: 'monospace' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Correo Institucional
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Compañía Principal
+                  </label>
+                  <input
+                    type="text"
+                    value={editCompany}
+                    onChange={(e) => setEditCompany(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Disciplina
+                  </label>
+                  <select
+                    value={editDiscipline}
+                    onChange={(e) => setEditDiscipline(e.target.value as DisciplineType)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  >
+                    <option value="MUSICA">Música / Instrumento</option>
+                    <option value="CANTO">Canto / Vocal</option>
+                    <option value="BAILE">Danza / Baile</option>
+                    <option value="TEATRO">Teatro / Actuación</option>
+                    <option value="STAFF">Staff / Producción</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Sección / Instrumento
+                  </label>
+                  <input
+                    type="text"
+                    value={editSection}
+                    onChange={(e) => setEditSection(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Estatus
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  >
+                    <option value="ACTIVE">🟢 Activo</option>
+                    <option value="PENDING_APPROVAL">⏳ Pendiente</option>
+                    <option value="REJECTED">🔴 Rechazado / Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setEditStudent(null)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary">
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* STUDENT FULL PROFILE & MULTI-PROJECT EXPEDIENTE MODAL */}
       {detailStudent && (
         <div className="modal-backdrop" onClick={() => setDetailStudent(null)}>
           <div
@@ -348,21 +574,43 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
               <div><strong>Campus:</strong> {detailStudent.campus}</div>
             </div>
 
-            {/* Assigned Projects */}
+            {/* Assigned Projects & Multi-Enrollment Form */}
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <FolderKanban style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Proyectos & Eventos Asignados
-              </h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FolderKanban style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Proyectos & Eventos en los que Participa ({studentProjects.length})
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                 {studentProjects.map((p) => (
-                  <span key={p.id} style={{ background: '#f3e8ff', color: '#6b21a8', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
-                    🎭 {p.name}
+                  <span key={p.id} style={{ background: '#f3e8ff', color: '#6b21a8', padding: '6px 12px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, border: '1px solid #d8b4fe' }}>
+                    🎭 {p.name} ({p.type === 'SPECIAL_EVENT' ? 'Evento' : 'Compañía'})
                   </span>
                 ))}
                 {studentProjects.length === 0 && (
-                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>No está inscrito en proyectos adicionales aún.</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Aún no está inscrito en proyectos adicionales.</span>
                 )}
               </div>
+
+              {/* Quick Enroll in another active Project */}
+              <form onSubmit={handleEnrollInProject} style={{ display: 'flex', gap: '8px', background: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                <select
+                  value={enrollProjectId}
+                  onChange={(e) => setEnrollProjectId(e.target.value)}
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', background: '#ffffff' }}
+                >
+                  <option value="">-- Inscribir en Otro Proyecto Activo --</option>
+                  {projects.filter((p) => p.status === 'ACTIVE' && !studentProjects.some((sp) => sp.id === p.id)).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      🎭 {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" className="btn-primary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                  <Plus style={{ width: '14px', height: '14px' }} /> Vincular a Proyecto
+                </button>
+              </form>
             </div>
 
             {/* Extracted Academic Schedule Slots (Horario MiTec cargado) */}

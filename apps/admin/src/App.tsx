@@ -249,6 +249,23 @@ export const App: React.FC = () => {
                 onApproveStudent={handleApproveStudent}
                 onRejectStudent={handleRejectStudent}
                 onAddDirectStudent={handleAddDirectStudent}
+                onUpdateStudent={(updatedStd) =>
+                  setStudents((prev) => prev.map((s) => (s.id === updatedStd.id ? updatedStd : s)))
+                }
+                onEnrollStudentInProject={(studentId, projectId) => {
+                  setProjects((prev) =>
+                    prev.map((p) =>
+                      p.id === projectId
+                        ? {
+                            ...p,
+                            enrolledStudentIds: p.enrolledStudentIds.includes(studentId)
+                              ? p.enrolledStudentIds
+                              : [...p.enrolledStudentIds, studentId],
+                          }
+                        : p
+                    )
+                  );
+                }}
               />
             )}
 
