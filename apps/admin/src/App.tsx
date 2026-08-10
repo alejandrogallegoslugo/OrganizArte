@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar, AdminTab } from './components/Sidebar';
 import { MiTecTopBar } from './components/MiTecTopBar';
 import { Dashboard } from './components/Dashboard';
-import { PendingApprovals } from './components/PendingApprovals';
+import { StudentManager } from './components/StudentManager';
 import { AvailabilityHeatmap } from './components/AvailabilityHeatmap';
 import { RehearsalScheduler } from './components/RehearsalScheduler';
 import { RoomManager } from './components/RoomManager';
@@ -242,8 +242,10 @@ export const App: React.FC = () => {
             )}
 
             {activeTab === 'approvals' && (
-              <PendingApprovals
+              <StudentManager
                 students={students}
+                schedules={schedules}
+                projects={projects}
                 onApproveStudent={handleApproveStudent}
                 onRejectStudent={handleRejectStudent}
                 onAddDirectStudent={handleAddDirectStudent}
