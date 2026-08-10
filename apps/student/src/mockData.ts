@@ -112,3 +112,7 @@ export const MY_BOOKINGS: RoomBooking[] = [
     approvedBy: 'Director R. Cantú',
   },
 ];
+
+export const MOCK_REHEARSALS = UPCOMING_REHEARSALS;
+export const MOCK_SONGS: Song[] = [];
+export const INITIAL_SLOTS = STUDENT_SCHEDULE.slots;

@@ -29,13 +29,17 @@ export async function uploadStudentFileToR2(
         });
       }, 800);
     });
-  } catch (error: any) {
-    console.error('Cloudflare R2 Upload Error:', error);
+  } catch (err: any) {
     return {
       success: false,
       fileUrl: '',
       key: '',
-      error: error.message || 'Error al subir a Cloudflare R2',
+      error: err.message,
     };
   }
+}
+
+export async function createRoomBookingInNeon(booking: any): Promise<any> {
+  console.log('[Neon Postgres] Guardando reservación:', booking);
+  return booking;
 }
