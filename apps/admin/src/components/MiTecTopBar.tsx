@@ -45,22 +45,9 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       zIndex: 150,
       boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      {/* Left: Official Logo + Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
+      {/* Left: Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Official Logo Image */}
-          <img
-            src="/logo.png"
-            alt="OrganizArte Logo"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              objectFit: 'cover',
-              boxShadow: '0 4px 14px rgba(6, 182, 212, 0.45)'
-            }}
-          />
-
           {/* Icon Multi-Colored Vertical Bars */}
           <div style={{ display: 'flex', gap: '3px', height: '28px', alignItems: 'center' }}>
             <span style={{ width: '5px', height: '24px', background: '#f59e0b', borderRadius: '3px' }} />

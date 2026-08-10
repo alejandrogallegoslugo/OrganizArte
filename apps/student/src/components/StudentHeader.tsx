@@ -34,20 +34,8 @@ export const StudentHeader: React.FC<StudentHeaderProps> = ({
       zIndex: 100,
       boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      {/* Left: Official Logo + Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
+      {/* Left: Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <img
-          src="/logo.png"
-          alt="OrganizArte Logo"
-          style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '10px',
-            objectFit: 'cover',
-            boxShadow: '0 4px 12px rgba(6, 182, 212, 0.45)'
-          }}
-        />
-
         <div style={{ display: 'flex', gap: '2px', height: '22px', alignItems: 'center' }}>
           <span style={{ width: '4px', height: '20px', background: '#f59e0b', borderRadius: '2px' }} />
           <span style={{ width: '4px', height: '22px', background: '#ec4899', borderRadius: '2px' }} />
