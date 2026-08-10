@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar, AdminTab } from './components/Sidebar';
 import { Header } from './components/Header';
+import { MiTecTopBar } from './components/MiTecTopBar';
 import { Dashboard } from './components/Dashboard';
 import { PendingApprovals } from './components/PendingApprovals';
 import { AvailabilityHeatmap } from './components/AvailabilityHeatmap';
@@ -242,29 +243,28 @@ export const App: React.FC = () => {
       isActive: true,
     };
     setCampuses((prev) => [newCampus, ...prev]);
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-dark)' }}>
-      {/* Navigation Sidebar */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        pendingApprovalsCount={pendingApprovalsCount}
-        adminUser={adminUser}
-        onLogout={handleLogout}
-      />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)' }}>
+      <MiTecTopBar adminName={adminUser.name} />
 
-      {/* Main Content View */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Header currentCompany={currentCompany} setCurrentCompany={setCurrentCompany} companies={companies} />
+      <div style={{ display: 'flex', flex: 1 }}>
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          pendingApprovalsCount={pendingApprovalsCount}
+          adminUser={adminUser}
+          onLogout={handleLogout}
+        />
 
-        <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
-          {loadingDb && (
-            <div style={{ padding: '12px 20px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', color: '#38bdf8', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ⚡ Sincronizando datos del sistema...
-            </div>
-          )}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <Header currentCompany={currentCompany} setCurrentCompany={setCurrentCompany} companies={companies} />
+
+          <main style={{ flex: 1, padding: '28px', overflowY: 'auto' }}>
+            {loadingDb && (
+              <div style={{ padding: '12px 20px', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', color: '#38bdf8', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⚡ Sincronizando datos del sistema...
+              </div>
+            )}
 
           {activeTab === 'dashboard' && (
             <Dashboard
@@ -357,5 +357,6 @@ export const App: React.FC = () => {
         </main>
       </div>
     </div>
+  </div>
   );
 };

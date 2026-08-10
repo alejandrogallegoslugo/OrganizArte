@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Palette, Bell, ShieldCheck, Sun, Moon, Music, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Bell, Bookmark, HelpCircle, Sun, Moon } from 'lucide-react';
 import { StudentProfile } from '../shared';
 
 interface StudentHeaderProps {
@@ -15,86 +15,93 @@ export const StudentHeader: React.FC<StudentHeaderProps> = ({
 }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
   };
 
   return (
     <header style={{
-      padding: '16px 20px',
-      background: 'var(--bg-card)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid var(--border-color)',
+      padding: '12px 16px',
+      background: '#ffffff',
+      borderBottom: '1px solid #e2e8f0',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
-      zIndex: 100
+      zIndex: 100,
+      boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <img
-          src="/logo.png"
-          alt="OrganizArte Logo"
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
-            objectFit: 'cover',
-            boxShadow: '0 4px 12px rgba(6, 182, 212, 0.4)'
-          }}
-        />
+      {/* Left: MiTec Mobile Logo & Subtitle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '2px', height: '22px', alignItems: 'center' }}>
+          <span style={{ width: '4px', height: '20px', background: '#f59e0b', borderRadius: '2px' }} />
+          <span style={{ width: '4px', height: '22px', background: '#ec4899', borderRadius: '2px' }} />
+          <span style={{ width: '4px', height: '18px', background: '#06b6d4', borderRadius: '2px' }} />
+        </div>
         <div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>{student.name}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-            <ShieldCheck style={{ width: '12px', height: '12px' }} /> {student.companyName} • {student.section}
-          </div>
+          <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', fontFamily: 'Outfit, sans-serif' }}>
+            mitec
+          </span>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#0033a0', display: 'block', marginTop: '-3px' }}>
+            alumnos
+          </span>
         </div>
       </div>
 
-      {/* Actions: Theme Switcher & Push Toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: 'var(--bg-dark)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '10px',
-            padding: '8px',
-            color: 'var(--text-main)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer'
-          }}
-          title="Cambiar Modo Claro / Oscuro"
-        >
-          {theme === 'light' ? <Sun style={{ width: '16px', height: '16px', color: '#d97706' }} /> : <Moon style={{ width: '16px', height: '16px', color: '#38bdf8' }} />}
+      {/* Right: Quick Action Icons */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
+          <Search style={{ width: '18px', height: '18px' }} />
+        </button>
+
+        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
+          <Bookmark style={{ width: '18px', height: '18px' }} />
         </button>
 
         <button
           onClick={() => setPushEnabled(!pushEnabled)}
           style={{
-            background: pushEnabled ? 'rgba(2, 132, 199, 0.15)' : 'var(--bg-dark)',
-            border: pushEnabled ? '1px solid #0284c7' : '1px solid var(--border-color)',
-            borderRadius: '10px',
-            padding: '8px 10px',
-            color: pushEnabled ? '#0284c7' : 'var(--text-muted)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            cursor: 'pointer'
+            background: 'none',
+            border: 'none',
+            color: pushEnabled ? '#ec4899' : '#64748b',
+            cursor: 'pointer',
+            padding: '4px',
+            position: 'relative'
           }}
         >
-          <Bell style={{ width: '14px', height: '14px' }} />
-          {pushEnabled ? 'Push iOS' : 'Notif'}
+          <Bell style={{ width: '18px', height: '18px' }} />
+          {pushEnabled && (
+            <span style={{
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              width: '6px',
+              height: '6px',
+              background: '#ec4899',
+              borderRadius: '50%'
+            }} />
+          )}
         </button>
+
+        <button onClick={toggleTheme} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
+          {theme === 'light' ? <Sun style={{ width: '18px', height: '18px', color: '#f59e0b' }} /> : <Moon style={{ width: '18px', height: '18px', color: '#38bdf8' }} />}
+        </button>
+
+        {/* Profile Avatar */}
+        <img
+          src="/logo.png"
+          alt={student.name}
+          style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            objectFit: 'cover',
+            border: '2px solid #0033a0'
+          }}
+        />
       </div>
     </header>
   );

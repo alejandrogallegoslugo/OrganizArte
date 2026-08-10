@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  LayoutDashboard,
+  Home,
   UserCheck,
   CalendarClock,
   CalendarDays,
@@ -8,11 +8,14 @@ import {
   Music2,
   QrCode,
   FileCheck2,
-  Building,
   LogOut,
   Palette,
   Settings,
   Users,
+  IdCard,
+  Bot,
+  Layers,
+  Activity,
 } from 'lucide-react';
 
 export type AdminTab =
@@ -44,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const menuItems: { id: AdminTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'dashboard', label: 'Dashboard Artístico', icon: <LayoutDashboard style={{ width: 18, height: 18 }} /> },
+    { id: 'dashboard', label: 'Inicio', icon: <Home style={{ width: 18, height: 18 }} /> },
     { id: 'approvals', label: 'Aprobación Alumnos', icon: <UserCheck style={{ width: 18, height: 18 }} />, badge: pendingApprovalsCount },
     { id: 'availability', label: 'Matriz & IA Horarios', icon: <CalendarClock style={{ width: 18, height: 18 }} /> },
     { id: 'cast', label: 'Reparto & Personajes', icon: <Users style={{ width: 18, height: 18 }} /> },
@@ -59,40 +62,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside style={{
-      width: '260px',
-      background: 'var(--bg-card)',
-      borderRight: '1px solid var(--border-color)',
+      width: '240px',
+      background: '#ffffff',
+      borderRight: '1px solid #e2e8f0',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '24px 16px',
-      height: '100vh',
+      padding: '20px 14px',
+      height: 'calc(100vh - 64px)',
       position: 'sticky',
-      top: 0
+      top: '64px',
+      overflowY: 'auto'
     }}>
       <div>
-        {/* Brand Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 12px 24px 12px', borderBottom: '1px solid var(--border-color)' }}>
-          <img
-            src="/logo.png"
-            alt="OrganizArte Logo"
+        {/* Main Section Link */}
+        <div style={{ marginBottom: '16px' }}>
+          <button
+            onClick={() => setActiveTab('dashboard')}
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              objectFit: 'cover',
-              boxShadow: '0 4px 14px rgba(6, 182, 212, 0.4)'
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: 'none',
+              background: activeTab === 'dashboard' ? '#e0f2fe' : 'transparent',
+              color: activeTab === 'dashboard' ? '#0033a0' : '#475569',
+              fontWeight: activeTab === 'dashboard' ? 700 : 500,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
             }}
-          />
-          <div>
-            <h1 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 800, lineHeight: 1.1 }}>OrganizArte</h1>
-            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Compañía Artística Tec</span>
-          </div>
+          >
+            <Home style={{ width: 18, height: 18, color: activeTab === 'dashboard' ? '#0033a0' : '#64748b' }} />
+            <span>Inicio</span>
+          </button>
         </div>
 
-        {/* Menu Items */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '16px' }}>
-          {menuItems.map((item) => {
+        {/* Section Header: MIS SERVICIOS */}
+        <div style={{
+          fontSize: '0.7rem',
+          fontWeight: 800,
+          color: '#94a3b8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          padding: '8px 12px 6px 12px',
+        }}>
+          MIS SERVICIOS TEC
+        </div>
+
+        {/* Services Links */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {menuItems.slice(1).map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
@@ -102,11 +123,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '10px 14px',
+                  padding: '9px 12px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: isActive ? 'var(--primary-glow)' : 'transparent',
-                  color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+                  background: isActive ? '#f1f5f9' : 'transparent',
+                  color: isActive ? '#0033a0' : '#475569',
                   fontWeight: isActive ? 700 : 500,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
@@ -114,12 +135,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {item.icon}
+                  <span style={{ color: isActive ? '#0033a0' : '#64748b' }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
                   <span style={{
-                    background: 'var(--accent-amber)',
+                    background: '#ec4899',
                     color: '#fff',
                     fontSize: '0.7rem',
                     fontWeight: 800,
@@ -135,60 +156,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* User Profile Badge & Logout */}
-      <div style={{
-        padding: '12px',
-        background: 'var(--bg-dark)',
-        borderRadius: '12px',
-        border: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: '0.75rem'
-          }}>
-            SA
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              {adminUser?.name || 'Prof. Alejandro Gallegos'}
-            </div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--accent-amber)', fontWeight: 700 }}>
-              Super Admin
-            </div>
-          </div>
+      {/* Footer: Service Status & User Logout */}
+      <div style={{ paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', fontSize: '0.75rem', color: '#10b981', fontWeight: 700, marginBottom: '12px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+          <span>Estado de Servicios Tec: OK</span>
         </div>
 
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--accent-rose)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="Cerrar Sesión"
-          >
-            <LogOut style={{ width: '16px', height: '16px' }} />
-          </button>
-        )}
+        <div style={{
+          padding: '10px 12px',
+          background: '#f8fafc',
+          borderRadius: '10px',
+          border: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {adminUser?.name || 'Prof. Alejandro Gallegos'}
+          </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '4px' }}
+              title="Cerrar sesión"
+            >
+              <LogOut style={{ width: 16, height: 16 }} />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );
