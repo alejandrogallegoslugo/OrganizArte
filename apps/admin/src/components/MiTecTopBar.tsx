@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Search,
   ChevronDown,
@@ -22,21 +22,34 @@ import {
 } from 'lucide-react';
 import { StudentProfile } from '../shared';
 
+export interface UserRoleProfile {
+  id: string;
+  label: string;
+  roleDescription: string;
+}
+
 interface MiTecTopBarProps {
   adminName?: string;
+  userProfiles?: UserRoleProfile[];
   onSearchSelect?: (tab: string) => void;
   onLogout?: () => void;
   students?: StudentProfile[];
   pendingApprovalsCount?: number;
 }
 
+const DEFAULT_PROFILES: UserRoleProfile[] = [
+  { id: 'director', label: 'Director de Compañía', roleDescription: 'Gestión General Tec' },
+];
+
 export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
   adminName = 'Prof. Alejandro Gallegos',
+  userProfiles = DEFAULT_PROFILES,
   onSearchSelect,
   onLogout,
   students = [],
   pendingApprovalsCount = 0,
 }) => {
+  const [activeProfileId, setActiveProfileId] = useState(userProfiles[0]?.id || 'director');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
@@ -45,7 +58,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Bookmarks State
-  const [bookmarks, setBookmarks] = useState<string[]>([
+  const [bookmarks] = useState<string[]>([
     'Aprobación de Alumnos',
     'Agenda & Ensayos',
     'Pase de Lista QR',
@@ -63,6 +76,9 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
   };
+
+  // Auto-hide rule: Only show "Cambiar perfil" if user has MORE than 1 profile!
+  const hasMultipleProfiles = userProfiles.length > 1;
 
   // Filter students for search dropdown
   const filteredStudents = searchQuery.trim()
@@ -110,69 +126,74 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           </div>
         </div>
 
-        {/* 1. Cambiar perfil Button & Dropdown */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => toggleMenu('profile')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              background: activeMenu === 'profile' ? '#e0f2fe' : '#f1f5f9',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              color: '#0033a0',
-              cursor: 'pointer'
-            }}
-          >
-            <span>Cambiar perfil</span>
-            <ChevronDown style={{ width: '14px', height: '14px', transform: activeMenu === 'profile' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-          </button>
+        {/* 1. Cambiar perfil Button (AUTO-HIDES if user has only 1 profile!) */}
+        {hasMultipleProfiles && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => toggleMenu('profile')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: activeMenu === 'profile' ? '#e0f2fe' : '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                color: '#0033a0',
+                cursor: 'pointer'
+              }}
+            >
+              <span>Cambiar perfil</span>
+              <ChevronDown style={{ width: '14px', height: '14px', transform: activeMenu === 'profile' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
 
-          {activeMenu === 'profile' && (
-            <div style={{
-              position: 'absolute',
-              top: '115%',
-              left: 0,
-              width: '240px',
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
-              padding: '8px',
-              zIndex: 300
-            }}>
-              <div style={{ padding: '8px 10px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                Perfiles de Arte y Cultura
+            {activeMenu === 'profile' && (
+              <div style={{
+                position: 'absolute',
+                top: '115%',
+                left: 0,
+                width: '240px',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
+                padding: '8px',
+                zIndex: 300
+              }}>
+                <div style={{ padding: '8px 10px', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                  Perfiles de Arte y Cultura
+                </div>
+                {userProfiles.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setActiveProfileId(p.id); setActiveMenu(null); }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '9px 10px',
+                      borderRadius: '8px',
+                      background: p.id === activeProfileId ? '#e0f2fe' : 'transparent',
+                      color: p.id === activeProfileId ? '#0033a0' : '#334155',
+                      border: 'none',
+                      fontWeight: p.id === activeProfileId ? 700 : 500,
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      marginBottom: '4px'
+                    }}
+                  >
+                    <span>{p.label}</span>
+                    {p.id === activeProfileId && <CheckCircle2 style={{ width: '14px', height: '14px' }} />}
+                  </button>
+                ))}
               </div>
-              <button
-                onClick={() => setActiveMenu(null)}
-                style={{ width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: '8px', background: '#e0f2fe', color: '#0033a0', border: 'none', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '4px' }}
-              >
-                <span>Director de Compañía</span>
-                <CheckCircle2 style={{ width: '14px', height: '14px' }} />
-              </button>
-              <button
-                onClick={() => { setActiveMenu(null); alert('Perfil de Profesor Colaborador Tec seleccionado.'); }}
-                style={{ width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: '8px', background: 'transparent', color: '#334155', border: 'none', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', marginBottom: '4px' }}
-              >
-                Profesor Colaborador Tec
-              </button>
-              <a
-                href="http://localhost:3001"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ width: '100%', textDecoration: 'none', textAlign: 'left', padding: '9px 10px', borderRadius: '8px', background: '#f8fafc', color: '#7c3aed', border: '1px solid #e2e8f0', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-              >
-                <span>Abrir Portal Alumno (PWA)</span>
-                <ExternalLink style={{ width: '14px', height: '14px' }} />
-              </a>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. Center: Global Search Bar with Live Autocomplete */}
