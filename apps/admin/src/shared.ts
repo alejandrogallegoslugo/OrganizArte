@@ -1,6 +1,32 @@
 // Shared types and utilities for Admin Portal
 export type DisciplineType = 'MUSICA' | 'CANTO' | 'BAILE' | 'TEATRO' | 'STAFF' | 'TEATRO_MUSICAL';
 
+export type ProjectType = 'COMPANY_SEMESTER' | 'SPECIAL_EVENT' | 'EXTRA_MASTERCLASS';
+export type ProjectStatus = 'ACTIVE' | 'ARCHIVED';
+
+export interface ProjectCharacter {
+  id: string;
+  name: string; // e.g. "Protagonista Vocal", "Primer Violín", "Solista Danza", "La Catrina"
+  roleType: 'PRINCIPAL' | 'SECONDARY' | 'ENSEMBLE' | 'SOLO';
+  assignedStudentId?: string;
+  assignedStudentName?: string;
+  notes?: string;
+}
+
+export interface ArtisticProject {
+  id: string;
+  name: string; // e.g. "Ensamble Musical WISHES 2026", "Día de Muertos 2026", "Noche Mexicana"
+  type: ProjectType;
+  campus: string;
+  startDate: string;
+  endDate: string;
+  status: ProjectStatus;
+  directorName: string;
+  characters: ProjectCharacter[];
+  enrolledStudentIds: string[];
+  description?: string;
+}
+
 export interface StudentProfile {
   id: string;
   name: string;
@@ -51,6 +77,7 @@ export interface RehearsalEvent {
   location: string;
   description?: string;
   qrCheckInCode: string;
+  projectId?: string;
 }
 
 export interface SongSheet {
@@ -77,6 +104,7 @@ export interface Song {
   sheets: SongSheet[];
   guides: SongGuide[];
   createdAt: string;
+  projectId?: string;
 }
 
 export interface StudentSchedule {

@@ -5,19 +5,16 @@ import {
   Bell,
   Bookmark,
   Grid,
-  HelpCircle,
   Smile,
   CheckCircle2,
   Sun,
   Moon,
   LogOut,
   Sparkles,
-  ExternalLink,
   UserCheck,
   Calendar,
   Building2,
   Music,
-  FileCheck,
   X,
   Menu,
   CalendarClock,
@@ -28,8 +25,9 @@ import {
   FileCheck2,
   Palette,
   Settings,
+  FolderKanban,
 } from 'lucide-react';
-import { StudentProfile } from '../shared';
+import { StudentProfile, ArtisticProject } from '../shared';
 
 export interface UserRoleProfile {
   id: string;
@@ -45,6 +43,9 @@ interface MiTecTopBarProps {
   students?: StudentProfile[];
   pendingApprovalsCount?: number;
   onToggleMobileSidebar?: () => void;
+  projects?: ArtisticProject[];
+  selectedProjectId?: string;
+  onSelectProject?: (projectId: string) => void;
 }
 
 const DEFAULT_PROFILES: UserRoleProfile[] = [
@@ -59,6 +60,9 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
   students = [],
   pendingApprovalsCount = 0,
   onToggleMobileSidebar,
+  projects = [],
+  selectedProjectId,
+  onSelectProject,
 }) => {
   const [activeProfileId, setActiveProfileId] = useState(userProfiles[0]?.id || 'director');
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,7 +98,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
   const appModules = [
     { id: 'approvals', label: 'Alumnos', icon: <UserCheck style={{ width: '22px', height: '22px', color: '#0033a0' }} />, bg: '#e0f2fe' },
     { id: 'availability', label: 'Horarios', icon: <CalendarClock style={{ width: '22px', height: '22px', color: '#06b6d4' }} />, bg: '#e0f2fe' },
-    { id: 'cast', label: 'Proyectos', icon: <Users style={{ width: '22px', height: '22px', color: '#7c3aed' }} />, bg: '#f3e8ff' },
+    { id: 'cast', label: 'Proyectos', icon: <FolderKanban style={{ width: '22px', height: '22px', color: '#7c3aed' }} />, bg: '#f3e8ff' },
     { id: 'rehearsals', label: 'Agenda', icon: <CalendarDays style={{ width: '22px', height: '22px', color: '#ec4899' }} />, bg: '#fce7f3' },
     { id: 'rooms', label: 'Salones', icon: <Building2 style={{ width: '22px', height: '22px', color: '#d97706' }} />, bg: '#fef3c7' },
     { id: 'songs', label: 'Repertorio', icon: <Music2 style={{ width: '22px', height: '22px', color: '#10b981' }} />, bg: '#dcfce7' },
@@ -128,7 +132,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       zIndex: 200,
       boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      {/* Left: Mobile Hamburger Toggle + Multi-Colored Vertical Bars + Brand Title */}
+      {/* Left: Mobile Hamburger Toggle + Brand Title + Global Active Project Selector */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         
         {/* Mobile Sidebar Hamburger Toggle Button */}
@@ -171,6 +175,34 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Global Active Project Selector */}
+        {projects && projects.length > 0 && (
+          <div style={{ marginLeft: '6px' }}>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => onSelectProject && onSelectProject(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                color: '#0033a0',
+                outline: 'none',
+                cursor: 'pointer',
+              }}
+              title="Seleccionar Proyecto Activo"
+            >
+              {projects.filter((p) => p.status === 'ACTIVE').map((p) => (
+                <option key={p.id} value={p.id}>
+                  🎭 Proyecto: {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Cambiar perfil Button (AUTO-HIDES if user has only 1 profile!) */}
         {hasMultipleProfiles && (
@@ -243,7 +275,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       </div>
 
       {/* Center: Global Search Bar */}
-      <div className="topbar-search" style={{ flex: '0 1 420px', margin: '0 12px', position: 'relative' }}>
+      <div className="topbar-search" style={{ flex: '0 1 360px', margin: '0 12px', position: 'relative' }}>
         <Search style={{
           position: 'absolute',
           left: '14px',

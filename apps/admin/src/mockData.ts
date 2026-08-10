@@ -1,4 +1,71 @@
-import { StudentProfile, StudentSchedule, RehearsalRoom, RoomBooking, RehearsalEvent, Song } from './shared';
+import { StudentProfile, StudentSchedule, RehearsalRoom, RoomBooking, RehearsalEvent, Song, ArtisticProject } from './shared';
+
+export const INITIAL_PROJECTS: ArtisticProject[] = [
+  {
+    id: 'proj-wishes-2026',
+    name: 'Ensamble Musical WISHES 2026',
+    type: 'COMPANY_SEMESTER',
+    campus: 'Tec Campus Laguna (Torreón)',
+    startDate: '2026-08-01',
+    endDate: '2026-12-15',
+    status: 'ACTIVE',
+    directorName: 'Prof. Alejandro Gallegos',
+    description: 'Montaje oficial del Ensamble Musical de Arte y Cultura para la temporada de otoño 2026.',
+    characters: [
+      { id: 'char-1', name: 'Solista Vocal Principal', roleType: 'PRINCIPAL', assignedStudentId: 'std-2', assignedStudentName: 'Sofia Garza', notes: 'Guía de armonías y voz lead.' },
+      { id: 'char-2', name: 'Primer Saxofón Alto (Lead)', roleType: 'SOLO', assignedStudentId: 'std-1', assignedStudentName: 'Mateo Hernández', notes: 'Solos improvisados en arreglos jazz.' },
+      { id: 'char-3', name: 'Batería & Percusión Principal', roleType: 'PRINCIPAL', assignedStudentId: 'std-5', assignedStudentName: 'Carlos Elizondo', notes: 'Base rítmica.' },
+    ],
+    enrolledStudentIds: ['std-1', 'std-2', 'std-5'],
+  },
+  {
+    id: 'proj-diade-muertos-2026',
+    name: 'Espectáculo Tradiciones: Día de Muertos 2026',
+    type: 'SPECIAL_EVENT',
+    campus: 'Tec Campus Laguna (Torreón)',
+    startDate: '2026-10-15',
+    endDate: '2026-11-02',
+    status: 'ACTIVE',
+    directorName: 'Prof. Alejandro Gallegos',
+    description: 'Magno evento de la Compañía en la explanada de la DAE con caracterizaciones de La Catrina y música en vivo.',
+    characters: [
+      { id: 'char-4', name: 'La Catrina (Voz Solista)', roleType: 'PRINCIPAL', assignedStudentId: 'std-2', assignedStudentName: 'Sofia Garza', notes: 'Vestuario caracterización completa.' },
+      { id: 'char-5', name: 'Cuerpo de Danza Contemporánea', roleType: 'ENSEMBLE', assignedStudentId: 'std-3', assignedStudentName: 'Diego Villalobos', notes: 'Cuadro de Catrines.' },
+    ],
+    enrolledStudentIds: ['std-2', 'std-3'],
+  },
+  {
+    id: 'proj-masterclass-2026',
+    name: 'Masterclass de Canto & Técnica Vocal',
+    type: 'EXTRA_MASTERCLASS',
+    campus: 'Tec Campus Laguna (Torreón)',
+    startDate: '2026-09-01',
+    endDate: '2026-09-02',
+    status: 'ACTIVE',
+    directorName: 'Maestra Invitada Mónica Hoth',
+    description: 'Taller de perfeccionamiento vocal y afinación escénica para vocalistas de la Compañía.',
+    characters: [
+      { id: 'char-6', name: 'Vocalista Activo Masterclass', roleType: 'SOLO', assignedStudentId: 'std-2', assignedStudentName: 'Sofia Garza', notes: 'Interpretación aria de prueba.' },
+      { id: 'char-7', name: 'Vocalista Oyente', roleType: 'ENSEMBLE', assignedStudentId: 'std-4', assignedStudentName: 'Mariana Cantú', notes: 'Participante registrado.' },
+    ],
+    enrolledStudentIds: ['std-2', 'std-4'],
+  },
+  {
+    id: 'proj-noche-mexicana-2025',
+    name: 'Gala Noche Mexicana 2025',
+    type: 'SPECIAL_EVENT',
+    campus: 'Tec Campus Laguna (Torreón)',
+    startDate: '2025-09-01',
+    endDate: '2025-09-16',
+    status: 'ARCHIVED',
+    directorName: 'Prof. Alejandro Gallegos',
+    description: 'Proyecto de celebración de fiestas patrias del año anterior.',
+    characters: [
+      { id: 'char-8', name: 'Solista Mariachi', roleType: 'PRINCIPAL', assignedStudentId: 'std-2', assignedStudentName: 'Sofia Garza', notes: 'Concierto en Auditorio Life.' },
+    ],
+    enrolledStudentIds: ['std-1', 'std-2'],
+  },
+];
 
 export const INITIAL_STUDENTS: StudentProfile[] = [
   {
@@ -12,7 +79,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     companyName: 'Ensamble Musical Tec',
     discipline: 'MUSICA',
     section: 'Saxofón Alto',
-    phone: '811-234-5678',
     createdAt: '2026-08-01',
   },
   {
@@ -26,7 +92,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     companyName: 'Ensamble Musical Tec',
     discipline: 'CANTO',
     section: 'Soprano',
-    phone: '818-765-4321',
     createdAt: '2026-08-02',
   },
   {
@@ -40,7 +105,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     companyName: 'Comedia Musical 2026',
     discipline: 'BAILE',
     section: 'Danza Contemporánea',
-    phone: '811-999-8877',
     createdAt: '2026-08-08',
   },
   {
@@ -54,7 +118,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     companyName: 'Ensamble Musical Tec',
     discipline: 'MUSICA',
     section: 'Trompeta 1',
-    phone: '818-444-2211',
     createdAt: '2026-08-09',
   },
   {
@@ -68,7 +131,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     companyName: 'Ensamble Musical Tec',
     discipline: 'MUSICA',
     section: 'Batería & Percusión',
-    phone: '811-555-1234',
     createdAt: '2026-08-03',
   },
 ];
@@ -76,34 +138,10 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
 export const INITIAL_SCHEDULES: StudentSchedule[] = [
   {
     studentId: 'std-1',
-    updatedAt: '2026-08-05',
     slots: [
       { id: 's1', day: 'LUNES', startTime: '09:00', endTime: '11:00', courseName: 'Cálculo Diferencial', isAcademicClass: true },
       { id: 's2', day: 'LUNES', startTime: '13:00', endTime: '15:00', courseName: 'Física I', isAcademicClass: true },
       { id: 's3', day: 'MARTES', startTime: '11:00', endTime: '13:00', courseName: 'Programación Orientada a Objetos', isAcademicClass: true },
-      { id: 's4', day: 'MIERCOLES', startTime: '09:00', endTime: '11:00', courseName: 'Cálculo Diferencial', isAcademicClass: true },
-      { id: 's5', day: 'JUEVES', startTime: '11:00', endTime: '13:00', courseName: 'Programación Orientada a Objetos', isAcademicClass: true },
-      { id: 's6', day: 'VIERNES', startTime: '15:00', endTime: '17:00', courseName: 'Laboratorio de Innovación', isAcademicClass: true },
-    ],
-  },
-  {
-    studentId: 'std-2',
-    updatedAt: '2026-08-06',
-    slots: [
-      { id: 's7', day: 'LUNES', startTime: '09:00', endTime: '11:00', courseName: 'Derecho Constitucional', isAcademicClass: true },
-      { id: 's8', day: 'MARTES', startTime: '15:00', endTime: '17:00', courseName: 'Ética y Filosofía', isAcademicClass: true },
-      { id: 's9', day: 'MIERCOLES', startTime: '09:00', endTime: '11:00', courseName: 'Derecho Constitucional', isAcademicClass: true },
-      { id: 's10', day: 'JUEVES', startTime: '15:00', endTime: '17:00', courseName: 'Ética y Filosofía', isAcademicClass: true },
-    ],
-  },
-  {
-    studentId: 'std-5',
-    updatedAt: '2026-08-07',
-    slots: [
-      { id: 's11', day: 'LUNES', startTime: '11:00', endTime: '13:00', courseName: 'Economía Tec', isAcademicClass: true },
-      { id: 's12', day: 'MARTES', startTime: '09:00', endTime: '11:00', courseName: 'Estadística Aplicada', isAcademicClass: true },
-      { id: 's13', day: 'JUEVES', startTime: '09:00', endTime: '11:00', courseName: 'Estadística Aplicada', isAcademicClass: true },
-      { id: 's14', day: 'VIERNES', startTime: '11:00', endTime: '13:00', courseName: 'Economía Tec', isAcademicClass: true },
     ],
   },
 ];
@@ -122,15 +160,7 @@ export const INITIAL_ROOMS: RehearsalRoom[] = [
     name: 'Sala de Danza & Expresión B-202',
     building: 'Pabellón Cultural Tec',
     capacity: 50,
-    equipment: ['Piso Flotante de Madera', 'Espejos de Muro Completo', 'Barras de Ballet', 'Sound System Bluetooth'],
-    status: 'AVAILABLE',
-  },
-  {
-    id: 'room-103',
-    name: 'Estudio de Canto & Vientos C-05',
-    building: 'Auditorio Luis Elizondo (Sótano)',
-    capacity: 15,
-    equipment: ['Piano Acústico Vertical', 'Aislamiento Acústico Premium', 'Micrófonos Shure SM58 (6)'],
+    equipment: ['Piso Flotante de Madera', 'Espejos de Muro Completo', 'Barras de Ballet'],
     status: 'AVAILABLE',
   },
 ];
@@ -143,33 +173,19 @@ export const INITIAL_ROOM_BOOKINGS: RoomBooking[] = [
     requestedByStudentId: 'std-1',
     studentName: 'Mateo Hernández',
     companyName: 'Ensamble Musical Tec',
-    purpose: 'Ensayo seccional de Vientos (Saxofones y Trompetas)',
+    purpose: 'Ensayo seccional de Vientos',
     date: '2026-08-12',
     startTime: '17:00',
     endTime: '19:00',
     status: 'APPROVED',
     qrPermissionCode: 'PERMISO-TEC-889021',
-    approvedBy: 'Director R. Cantú',
-  },
-  {
-    id: 'bk-2',
-    roomId: 'room-102',
-    roomName: 'Sala de Danza & Expresión B-202',
-    requestedByStudentId: 'std-3',
-    studentName: 'Diego Villalobos',
-    companyName: 'Comedia Musical 2026',
-    purpose: 'Ensayo de Coreografía Números 3 y 4',
-    date: '2026-08-14',
-    startTime: '18:00',
-    endTime: '20:00',
-    status: 'PENDING',
   },
 ];
 
 export const INITIAL_REHEARSALS: RehearsalEvent[] = [
   {
     id: 'reh-1',
-    title: 'Ensayo General - Gala de Invierno Tec',
+    title: 'Ensayo General - WISHES 2026',
     companyName: 'Ensamble Musical Tec',
     discipline: 'MUSICA',
     targetSections: [],
@@ -177,62 +193,43 @@ export const INITIAL_REHEARSALS: RehearsalEvent[] = [
     startTime: '17:00',
     endTime: '20:00',
     location: 'Salón de Ensamble A-101',
-    description: 'Ensayo de montaje completo para los temas de la Gala. Llevar partituras impresas o en tablet.',
-    qrCheckInCode: 'QR-ENSAYO-GALA-2026',
+    description: 'Ensayo de montaje completo para los temas de WISHES. Llevar partituras impresas o en tablet.',
+    qrCheckInCode: 'QR-ENSAYO-WISHES-2026',
+    projectId: 'proj-wishes-2026',
   },
   {
     id: 'reh-2',
-    title: 'Seccional de Canto & Armonía Vocal',
+    title: 'Caracterización & Canto - Día de Muertos',
     companyName: 'Ensamble Musical Tec',
     discipline: 'CANTO',
     targetSections: ['Soprano', 'Tenor', 'Alto'],
-    date: '2026-08-15',
+    date: '2026-10-20',
     startTime: '16:00',
     endTime: '18:00',
     location: 'Estudio de Canto & Vientos C-05',
-    description: 'Ajuste de afinación y matices en voces de acompañamiento.',
-    qrCheckInCode: 'QR-CANTO-VOCAL-8821',
+    description: 'Ajuste de vestuario y afinación de arias del espectáculo.',
+    qrCheckInCode: 'QR-CANTO-MUERTOS-8821',
+    projectId: 'proj-diade-muertos-2026',
   },
 ];
 
 export const INITIAL_SONGS: Song[] = [
   {
     id: 'song-1',
-    title: 'Huapango de Moncayo (Arr. Big Band Tec)',
+    title: 'Huapango de Moncayo (Arr. WISHES 2026)',
     composer: 'José Pablo Moncayo',
-    arranger: 'Prof. Roberto Cantú',
     companyName: 'Ensamble Musical Tec',
     genre: 'Sinfónico / Fusión',
     key: 'C Mayor',
     durationSeconds: 380,
     sheets: [
       { id: 'sh-1', instrumentOrVoice: 'Partitura Director (Full Score)', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf' },
-      { id: 'sh-2', instrumentOrVoice: 'Saxofón Alto 1', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf', keySignature: 'Eb' },
-      { id: 'sh-3', instrumentOrVoice: 'Trompeta 1', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf', keySignature: 'Bb' },
-      { id: 'sh-4', instrumentOrVoice: 'Voz Soprano Guía', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf' },
+      { id: 'sh-2', instrumentOrVoice: 'Saxofón Alto 1', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf' },
     ],
     guides: [
       { id: 'g-1', title: 'Pista Completa Maqueta (Tutti)', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', bpm: 128 },
-      { id: 'g-2', title: 'Guía Acompañamiento Piano & Bajo', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', bpm: 128 },
     ],
     createdAt: '2026-08-01',
-  },
-  {
-    id: 'song-2',
-    title: 'Uptown Funk (Medley Danza & Ensamble)',
-    composer: 'Mark Ronson / Bruno Mars',
-    arranger: 'Lalo Rodríguez',
-    companyName: 'Ensamble Musical Tec',
-    genre: 'Funk / Pop',
-    key: 'D Menor',
-    durationSeconds: 260,
-    sheets: [
-      { id: 'sh-5', instrumentOrVoice: 'Batería & Percusión', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf' },
-      { id: 'sh-6', instrumentOrVoice: 'Sección Metales (Brass Score)', pdfUrl: 'https://pdfobject.com/pdf/sample.pdf' },
-    ],
-    guides: [
-      { id: 'g-3', title: 'Pista de Referencia Ensayo Baile', audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', bpm: 115 },
-    ],
-    createdAt: '2026-08-04',
+    projectId: 'proj-wishes-2026',
   },
 ];
