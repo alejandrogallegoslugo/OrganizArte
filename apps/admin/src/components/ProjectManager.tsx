@@ -449,9 +449,6 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detalles sobre el montaje, repertorio o logística del evento..."
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
-              />
-            </div>
-
             <button type="submit" className="btn-primary" style={{ padding: '12px', justifyContent: 'center', fontSize: '0.95rem', marginTop: '8px' }}>
               🚀 Guardar y Crear Proyecto
             </button>
@@ -461,7 +458,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
       {/* PROJECTS LIST & EXECUTIVE SUMMARY DASHBOARD */}
       {activeTab !== 'create' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) 1fr', gap: '24px', alignItems: 'start' }}>
+        <div className="project-manager-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) 1fr', gap: '24px', alignItems: 'start' }}>
           
           {/* Left Column: Projects Selector List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -548,7 +545,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               </div>
 
               {/* PROJECT SUB-NAV TABS (Vista Detalle Resumen) */}
-              <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', overflowX: 'auto' }}>
                 <button
                   onClick={() => setProjectSubTab('overview')}
                   style={{
@@ -563,6 +560,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <Grid style={{ width: '16px', height: '16px' }} /> Resumen Ejecutivo
@@ -582,6 +580,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <Users style={{ width: '16px', height: '16px' }} /> Elenco ({selectedProject.characters.length})
@@ -601,6 +600,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} /> Horarios Alumnos
@@ -620,6 +620,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <Calendar style={{ width: '16px', height: '16px' }} /> Ensayos
@@ -630,7 +631,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               {projectSubTab === 'overview' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* KPI Metric Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                  <div className="project-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
                     <div style={{ background: '#f0f9ff', padding: '14px', borderRadius: '12px', border: '1px solid #bae6fd' }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>Personajes</div>
                       <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0033a0', marginTop: '4px' }}>

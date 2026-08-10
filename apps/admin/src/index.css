@@ -242,8 +242,28 @@ h1, h2, h3, h4, h5, h6 {
    ========================================== */
 @media (max-width: 900px) {
   /* Dashboard layout: stack columns vertically on mobile */
-  .dashboard-grid {
+  .dashboard-grid, .project-manager-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Project Manager KPI Cards Grid on mobile */
+  .project-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Project Manager Form Grids on mobile */
+  .project-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* TopBar Project Selector Dropdown Responsive Formatting */
+  .project-selector-topbar {
+    max-width: 130px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
   }
 
   /* Sidebar drawer behavior on mobile screen */
@@ -271,5 +291,11 @@ h1, h2, h3, h4, h5, h6 {
   /* Page padding adjustment */
   main {
     padding: 14px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .project-kpi-grid {
+    grid-template-columns: 1fr !important;
   }
 }

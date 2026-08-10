@@ -180,6 +180,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
         {projects && projects.length > 0 && (
           <div style={{ marginLeft: '6px' }}>
             <select
+              className="project-selector-topbar"
               value={selectedProjectId}
               onChange={(e) => onSelectProject && onSelectProject(e.target.value)}
               style={{
