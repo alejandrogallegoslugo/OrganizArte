@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Briefcase,
   Layers,
@@ -10,6 +10,13 @@ import {
   Building2,
   QrCode,
   X,
+  Edit3,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  Save,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { StudentProfile, RehearsalEvent, RoomBooking } from '../shared';
 
@@ -21,6 +28,48 @@ interface DashboardProps {
   setActiveTab: (tab: any) => void;
 }
 
+export interface AnnouncementSlide {
+  id: number | string;
+  tag: string;
+  title: string;
+  subtitle: string;
+  date: string;
+  location: string;
+  bg: string;
+  imageUrl?: string;
+}
+
+const DEFAULT_SLIDES: AnnouncementSlide[] = [
+  {
+    id: 1,
+    tag: 'EVENTO TEC',
+    title: 'Ceremonia de BIENVENIDA GENERACIÓN 13',
+    subtitle: 'Celebremos la llegada de una nueva generación de líderes que inspiran.',
+    date: 'Lunes 17 de agosto • 16:00 hrs (CDT)',
+    location: 'Centro de Congresos, Campus Monterrey',
+    bg: 'linear-gradient(160deg, #0284c7 0%, #0033a0 100%)',
+    imageUrl: '/banner.png',
+  },
+  {
+    id: 2,
+    tag: 'COMPAÑÍA ARTÍSTICA',
+    title: 'Audiciones Abiertas Tec 2026',
+    subtitle: 'Ensamble Musical, Comedia Musical, Baile y Teatro de Tecnológico de Monterrey.',
+    date: 'Viernes 21 de agosto • 15:00 hrs',
+    location: 'Foro de Artes Escénicas',
+    bg: 'linear-gradient(160deg, #7c3aed 0%, #0033a0 100%)',
+  },
+  {
+    id: 3,
+    tag: 'RECONOCIMIENTO',
+    title: 'Premios EXATEC Trayectoria',
+    subtitle: 'Nominaciones abiertas para estudiantes destacados en artes escénicas Tec.',
+    date: 'Cierre: 30 de agosto',
+    location: 'Nacional Tec',
+    bg: 'linear-gradient(160deg, #059669 0%, #0033a0 100%)',
+  },
+];
+
 export const Dashboard: React.FC<DashboardProps> = ({
   students,
   rehearsals,
@@ -30,42 +79,125 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
 
-  // Hero Announcement Banner Carousel State (Vertical Poster Layout like MiTec)
+  // Dynamic Announcement Slides State with localStorage persistence
+  const [slides, setSlides] = useState<AnnouncementSlide[]>(() => {
+    try {
+      const saved = localStorage.getItem('organizarte_announcements_slides');
+      return saved ? JSON.parse(saved) : DEFAULT_SLIDES;
+    } catch {
+      return DEFAULT_SLIDES;
+    }
+  });
+
   const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [
-    {
-      id: 1,
-      tag: 'EVENTO TEC',
-      title: 'Ceremonia de BIENVENIDA GENERACIÓN 13',
-      subtitle: 'Celebremos la llegada de una nueva generación de líderes que inspiran.',
-      date: 'Lunes 17 de agosto • 16:00 hrs (CDT)',
-      location: 'Centro de Congresos, Campus Monterrey',
-      bg: 'linear-gradient(160deg, #0284c7 0%, #0033a0 100%)',
-    },
-    {
-      id: 2,
-      tag: 'COMPAÑÍA ARTÍSTICA',
-      title: 'Audiciones Abiertas Tec 2026',
-      subtitle: 'Ensamble Musical, Comedia Musical, Baile y Teatro de Tecnológico de Monterrey.',
-      date: 'Viernes 21 de agosto • 15:00 hrs',
-      location: 'Foro de Artes Escénicas',
-      bg: 'linear-gradient(160deg, #7c3aed 0%, #0033a0 100%)',
-    },
-    {
-      id: 3,
-      tag: 'RECONOCIMIENTO',
-      title: 'Premios EXATEC Trayectoria',
-      subtitle: 'Nominaciones abiertas para estudiantes destacados en artes escénicas Tec.',
-      date: 'Cierre: 30 de agosto',
-      location: 'Nacional Tec',
-      bg: 'linear-gradient(160deg, #059669 0%, #0033a0 100%)',
-    },
-  ];
+  const [showEditSlideModal, setShowEditSlideModal] = useState(false);
+
+  // Form state for creating or editing announcement slides
+  const [editingSlideId, setEditingSlideId] = useState<number | string | null>(null);
+  const [formTag, setFormTag] = useState('');
+  const [formTitle, setFormTitle] = useState('');
+  const [formSubtitle, setFormSubtitle] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formBg, setFormBg] = useState('linear-gradient(160deg, #0284c7 0%, #0033a0 100%)');
+  const [formImageUrl, setFormImageUrl] = useState('');
+
+  // Save slides to localStorage
+  useEffect(() => {
+    localStorage.setItem('organizarte_announcements_slides', JSON.stringify(slides));
+  }, [slides]);
+
+  // Ensure currentSlide is within bounds
+  const validSlideIndex = Math.min(currentSlide, Math.max(0, slides.length - 1));
+
+  // Open modal to edit current slide or create a new slide
+  const openEditModalForSlide = (slide?: AnnouncementSlide) => {
+    if (slide) {
+      setEditingSlideId(slide.id);
+      setFormTag(slide.tag);
+      setFormTitle(slide.title);
+      setFormSubtitle(slide.subtitle);
+      setFormDate(slide.date);
+      setFormLocation(slide.location);
+      setFormBg(slide.bg);
+      setFormImageUrl(slide.imageUrl || '');
+    } else {
+      setEditingSlideId(null);
+      setFormTag('AVISO ARTÍSTICO');
+      setFormTitle('');
+      setFormSubtitle('');
+      setFormDate('Próximamente');
+      setFormLocation('Tec Campus Laguna');
+      setFormBg('linear-gradient(160deg, #ec4899 0%, #0033a0 100%)');
+      setFormImageUrl('');
+    }
+    setShowEditSlideModal(true);
+  };
+
+  const handleSaveSlideForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim()) return;
+
+    if (editingSlideId !== null) {
+      // Update existing slide
+      setSlides((prev) =>
+        prev.map((s) =>
+          s.id === editingSlideId
+            ? {
+                ...s,
+                tag: formTag,
+                title: formTitle,
+                subtitle: formSubtitle,
+                date: formDate,
+                location: formLocation,
+                bg: formBg,
+                imageUrl: formImageUrl,
+              }
+            : s
+        )
+      );
+    } else {
+      // Create new slide
+      const newSlide: AnnouncementSlide = {
+        id: Date.now(),
+        tag: formTag || 'ANUNCIO',
+        title: formTitle,
+        subtitle: formSubtitle,
+        date: formDate,
+        location: formLocation,
+        bg: formBg,
+        imageUrl: formImageUrl,
+      };
+      setSlides((prev) => [...prev, newSlide]);
+      setCurrentSlide(slides.length);
+    }
+    setShowEditSlideModal(false);
+  };
+
+  const handleDeleteSlide = (id: number | string) => {
+    if (slides.length <= 1) {
+      alert('Debes mantener al menos 1 aviso en el carrusel.');
+      return;
+    }
+    setSlides((prev) => prev.filter((s) => s.id !== id));
+    setCurrentSlide(0);
+  };
+
+  const moveSlide = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= slides.length) return;
+    const newSlides = [...slides];
+    const temp = newSlides[index];
+    newSlides[index] = newSlides[targetIndex];
+    newSlides[targetIndex] = temp;
+    setSlides(newSlides);
+    setCurrentSlide(targetIndex);
+  };
 
   // Accordion open state for work@arteycultura card
   const [openSection, setOpenSection] = useState<string | null>('institucion');
 
-  // Widget Cards Customization Engine (+ AGREGAR TARJETA) - Empty by default to avoid duplicate cards!
+  // Widget Cards Customization Engine (+ AGREGAR TARJETA)
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
 
@@ -85,6 +217,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
+  const activeSlide = slides[validSlideIndex] || DEFAULT_SLIDES[0];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -98,19 +232,48 @@ export const Dashboard: React.FC<DashboardProps> = ({
             position: 'relative',
             overflow: 'hidden',
             borderRadius: '20px',
-            background: slides[currentSlide].bg,
+            background: activeSlide.imageUrl
+              ? `linear-gradient(rgba(0, 51, 160, 0.75), rgba(0, 20, 70, 0.9)), url(${activeSlide.imageUrl}) center/cover no-repeat`
+              : activeSlide.bg,
             color: '#ffffff',
             padding: '28px 24px',
-            minHeight: '460px',
+            minHeight: '480px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             boxShadow: '0 10px 25px rgba(0,51,160,0.2)',
           }}
         >
+          {/* Admin Edit Overlay Button */}
+          <button
+            onClick={() => openEditModalForSlide(activeSlide)}
+            style={{
+              position: 'absolute',
+              top: '14px',
+              right: '14px',
+              background: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.4)',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '999px',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              zIndex: 10,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            }}
+            title="Editar o crear avisos"
+          >
+            <Edit3 style={{ width: '13px', height: '13px' }} /> Editar / Crear Banner
+          </button>
+
           {/* Top Tag & Dots */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               {/* Carousel Dots */}
               <div style={{ display: 'flex', gap: '6px' }}>
                 {slides.map((_, idx) => (
@@ -118,10 +281,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     key={idx}
                     onClick={() => setCurrentSlide(idx)}
                     style={{
-                      width: idx === currentSlide ? '20px' : '8px',
+                      width: idx === validSlideIndex ? '20px' : '8px',
                       height: '8px',
                       borderRadius: '999px',
-                      background: idx === currentSlide ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                      background: idx === validSlideIndex ? '#ffffff' : 'rgba(255,255,255,0.4)',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                     }}
@@ -140,7 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   letterSpacing: '0.05em',
                 }}
               >
-                {slides[currentSlide].tag}
+                {activeSlide.tag}
               </span>
             </div>
 
@@ -150,18 +313,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Tecnológico de Monterrey
               </div>
               <div style={{ fontSize: '0.72rem', fontWeight: 700, opacity: 0.85, textTransform: 'uppercase' }}>
-                Líderes del mañana
+                Compañía de Arte y Cultura
               </div>
             </div>
           </div>
 
           {/* Main Title & Details */}
-          <div style={{ margin: '20px 0' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.15, marginBottom: '12px', color: '#ffffff' }}>
-              {slides[currentSlide].title}
+          <div style={{ margin: '16px 0' }}>
+            <h2 style={{ fontSize: '1.55rem', fontWeight: 800, lineHeight: 1.18, marginBottom: '12px', color: '#ffffff' }}>
+              {activeSlide.title}
             </h2>
             <p style={{ fontSize: '0.88rem', opacity: 0.9, marginBottom: '16px', lineHeight: 1.4 }}>
-              {slides[currentSlide].subtitle}
+              {activeSlide.subtitle}
             </p>
             <div
               style={{
@@ -175,14 +338,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 boxShadow: '0 4px 12px rgba(249, 115, 22, 0.4)',
               }}
             >
-              {slides[currentSlide].date}
+              {activeSlide.date}
             </div>
           </div>
 
           {/* Location Badge & Navigation Arrows */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '14px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, opacity: 0.9 }}>
-              📍 {slides[currentSlide].location}
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, opacity: 0.9, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              📍 {activeSlide.location}
             </span>
 
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -434,6 +597,174 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
       </div>
+
+      {/* ADMIN EDIT SLIDE MODAL */}
+      {showEditSlideModal && (
+        <div className="modal-backdrop" onClick={() => setShowEditSlideModal(false)}>
+          <div
+            className="mitec-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '540px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles style={{ width: '20px', height: '20px', color: '#0033a0' }} />
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
+                  {editingSlideId !== null ? 'Editar Banner de Aviso' : 'Crear Nuevo Banner de Aviso'}
+                </h3>
+              </div>
+              <button onClick={() => setShowEditSlideModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            {/* List of current slides for ordering or deletion */}
+            <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Banners en el Carrusel ({slides.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {slides.map((s, idx) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: s.id === editingSlideId ? '#e0f2fe' : '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: '#0f172a', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {idx + 1}. {s.title}
+                    </span>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button onClick={() => openEditModalForSlide(s)} style={{ background: 'none', border: 'none', color: '#0033a0', cursor: 'pointer', padding: '2px' }} title="Editar">
+                        <Edit3 style={{ width: '14px', height: '14px' }} />
+                      </button>
+                      <button onClick={() => moveSlide(idx, 'up')} disabled={idx === 0} style={{ background: 'none', border: 'none', color: idx === 0 ? '#cbd5e1' : '#64748b', cursor: 'pointer', padding: '2px' }}>
+                        <ArrowUp style={{ width: '14px', height: '14px' }} />
+                      </button>
+                      <button onClick={() => moveSlide(idx, 'down')} disabled={idx === slides.length - 1} style={{ background: 'none', border: 'none', color: idx === slides.length - 1 ? '#cbd5e1' : '#64748b', cursor: 'pointer', padding: '2px' }}>
+                        <ArrowDown style={{ width: '14px', height: '14px' }} />
+                      </button>
+                      <button onClick={() => handleDeleteSlide(s.id)} style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '2px' }} title="Eliminar">
+                        <Trash2 style={{ width: '14px', height: '14px' }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Slide Edit Form */}
+            <form onSubmit={handleSaveSlideForm} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Categoría / Etiqueta</label>
+                <input
+                  type="text"
+                  required
+                  value={formTag}
+                  onChange={(e) => setFormTag(e.target.value)}
+                  placeholder="Ej. EVENTO TEC, AUDICIÓN, COMEDIA MUSICAL"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Título del Anuncio</label>
+                <input
+                  type="text"
+                  required
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  placeholder="Ej. Ceremonia de BIENVENIDA GENERACIÓN 13"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Descripción / Subtítulo</label>
+                <textarea
+                  rows={2}
+                  value={formSubtitle}
+                  onChange={(e) => setFormSubtitle(e.target.value)}
+                  placeholder="Descripción breve del evento o aviso..."
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Fecha y Hora</label>
+                  <input
+                    type="text"
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                    placeholder="Ej. Lunes 17 de agosto • 16:00 hrs"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Lugar / Sede</label>
+                  <input
+                    type="text"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    placeholder="Ej. Centro de Congresos, Campus Laguna"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Imagen de Fondo (URL o Preset)</label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                  <input
+                    type="text"
+                    value={formImageUrl}
+                    onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="Ej. /banner.png o https://..."
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                  <button type="button" className="btn-secondary" onClick={() => setFormImageUrl('/banner.png')} style={{ fontSize: '0.78rem', padding: '6px 10px' }}>
+                    <ImageIcon style={{ width: '14px', height: '14px' }} /> Usar Banner Oficial
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>Estilo de Fondo Gradiente</label>
+                <select
+                  value={formBg}
+                  onChange={(e) => setFormBg(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                >
+                  <option value="linear-gradient(160deg, #0284c7 0%, #0033a0 100%)">Azul Tec (Clásico)</option>
+                  <option value="linear-gradient(160deg, #7c3aed 0%, #0033a0 100%)">Morado y Azul (Artes)</option>
+                  <option value="linear-gradient(160deg, #059669 0%, #0033a0 100%)">Esmeralda y Azul (Gala)</option>
+                  <option value="linear-gradient(160deg, #ec4899 0%, #0033a0 100%)">Magenta Neón (Teatro)</option>
+                  <option value="linear-gradient(160deg, #f97316 0%, #0033a0 100%)">Naranja Calidez (Convocatoria)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                  <Save style={{ width: '16px', height: '16px' }} /> Guardar Anuncio
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => openEditModalForSlide()}>
+                  + Nuevo Anuncio
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Widget Selection Modal */}
       {showAddCardModal && (
