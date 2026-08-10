@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Sparkles, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface LoginProps {
-  onLoginSuccess: (adminUser: { name: string; email: string; role: string }) => void;
+  onLogin?: (adminUser: { name: string; email: string; role: string }) => void;
+  onLoginSuccess?: (adminUser: { name: string; email: string; role: string }) => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -19,12 +20,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Require authentication credentials
-    onLoginSuccess({
-      name: 'Prof. Alejandro Gallegos',
-      email: email,
-      role: 'SUPER_ADMIN',
-    });
+    const callback = onLoginSuccess || onLogin;
+    if (callback) {
+      callback({
+        name: 'Prof. Alejandro Gallegos',
+        email: email,
+        role: 'SUPER_ADMIN',
+      });
+    }
   };
 
   return (

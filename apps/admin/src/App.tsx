@@ -107,7 +107,7 @@ export const App: React.FC = () => {
   };
 
   if (!adminUser) {
-    return <Login onLogin={handleLogin} />;
+    return <Login onLogin={handleLogin} onLoginSuccess={handleLogin} />;
   }
 
   const pendingApprovalsCount = students.filter((s) => s.status === 'PENDING_APPROVAL').length;
