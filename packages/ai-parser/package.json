@@ -1,0 +1,6 @@
+{
+  "name": "@organizarte/ai-parser",
+  "version": "1.0.0",
+  "main": "src/gemini.ts",
+  "private": true
+}

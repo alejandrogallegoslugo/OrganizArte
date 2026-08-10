@@ -1,0 +1,6 @@
+{
+  "name": "@organizarte/notifications",
+  "version": "1.0.0",
+  "main": "src/resend.ts",
+  "private": true
+}

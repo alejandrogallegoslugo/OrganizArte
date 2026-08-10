@@ -1,0 +1,25 @@
+{
+  "short_name": "OrganizArte",
+  "name": "OrganizArte - Compañía Artística Tec",
+  "description": "App para integrantes de Ensamble, Teatro, Baile, Comedia Musical y Staff Tec.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["education", "entertainment", "productivity"]
+}
