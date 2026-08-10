@@ -6,41 +6,36 @@ import {
   Building2,
   User,
   LogOut,
-  ChevronRight,
-  ChevronDown,
-  Bot,
-  Layers,
-  MessageSquare,
-  X,
   Send,
+  Bot,
+  X,
+  Layers,
+  ChevronDown,
+  Home,
 } from 'lucide-react';
+import {
+  StudentProfile,
+  RehearsalEvent,
+  RoomBooking,
+  Song,
+  TimeSlot,
+} from './shared';
 import { StudentHeader } from './components/StudentHeader';
 import { MiIDDigitalCard } from './components/MiIDDigitalCard';
-import { AccountStatusBanner } from './components/AccountStatus';
 import { StudentAgenda } from './components/StudentAgenda';
 import { ScheduleUploadAI } from './components/ScheduleUploadAI';
 import { AudioPracticePlayer } from './components/AudioPracticePlayer';
 import { RoomPassPDF } from './components/RoomPassPDF';
+import { StudentLogin } from './components/StudentLogin';
+import { AccountStatusBanner } from './components/AccountStatus';
 import { QRScannerModal } from './components/QRScannerModal';
 import { JustificationForm } from './components/JustificationForm';
-import { StudentLogin } from './components/StudentLogin';
+import { MOCK_REHEARSALS, MOCK_SONGS, INITIAL_SLOTS } from './mockData';
+import { createRoomBookingInNeon } from './r2Storage';
 
-import { STUDENT_SCHEDULE } from './mockData';
-import { RehearsalEvent, TimeSlot, RoomBooking, StudentProfile, Song } from './shared';
-import {
-  registerStudentInNeon,
-  fetchStudentProfileByEmail,
-  createRoomBookingInNeon,
-  fetchStudentRehearsals,
-  fetchStudentSongs,
-} from './api';
-
-export type StudentPwaTab = 'agenda' | 'schedule-ai' | 'practice' | 'rooms' | 'profile';
+export type StudentPwaTab = 'home' | 'agenda' | 'schedule-ai' | 'practice' | 'rooms' | 'profile';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<StudentPwaTab>('agenda');
-  
-  // Auth Session State - Restored from localStorage so refresh stays logged in
   const [student, setStudent] = useState<StudentProfile | null>(() => {
     try {
       const saved = localStorage.getItem('organizarte_student_session');
@@ -50,83 +45,61 @@ export const App: React.FC = () => {
     }
   });
 
-  const [pushEnabled, setPushEnabled] = useState(true);
-
-  const [scheduleSlots, setScheduleSlots] = useState<TimeSlot[]>(STUDENT_SCHEDULE.slots);
-  const [rehearsals, setRehearsals] = useState<RehearsalEvent[]>([]);
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [activeTab, setActiveTab] = useState<StudentPwaTab>('home');
+  const [openService, setOpenService] = useState<string | null>('ensayos');
+  const [rehearsals] = useState<RehearsalEvent[]>(MOCK_REHEARSALS);
+  const [songs] = useState<Song[]>(MOCK_SONGS);
+  const [scheduleSlots, setScheduleSlots] = useState<TimeSlot[]>(INITIAL_SLOTS);
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
+  const [pushEnabled, setPushEnabled] = useState<boolean>(true);
 
-  // Accordion state for misServicios@tec
-  const [openService, setOpenService] = useState<string | null>('id-digital');
-
-  // TecGPT Assistant Floating Widget state
-  const [showBotModal, setShowBotModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ sender: 'bot' | 'user'; text: string }[]>([
-    { sender: 'bot', text: '¡Hola! Soy TECgpt / Asistente OrganizArte Tec. ¿En qué te puedo ayudar con tus ensayos, partituras o salones?' }
+  // Floating AI Chat Assistant Modal
+  const [showBotModal, setShowBotModal] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'bot' | 'user'; text: string }>>([
+    { sender: 'bot', text: '¡Hola! Soy TECgpt, tu asistente de la Compañía. ¿En qué te ayudo hoy?' },
   ]);
-  const [chatInput, setChatInput] = useState('');
+  const [chatInput, setChatInput] = useState<string>('');
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    const userMsg = chatInput.trim();
-    setChatMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
+
+    const userText = chatInput;
+    setChatMessages((prev) => [...prev, { sender: 'user', text: userText }]);
     setChatInput('');
 
     setTimeout(() => {
-      let response = 'Recibido. Puedes consultar la sección de Agenda para ver el salón y hora exacta de tus ensayos.';
-      if (userMsg.toLowerCase().includes('horario') || userMsg.toLowerCase().includes('mitec')) {
-        response = 'Para subir tu horario de MiTec, ve a la pestaña "IA Horario" y toma captura a tu portal.';
-      } else if (userMsg.toLowerCase().includes('partitura') || userMsg.toLowerCase().includes('audio')) {
-        response = 'Tus guías de voz y partituras en PDF están disponibles en la sección "Práctica".';
+      let reply = 'Puedes revisar tu agenda de ensayos o subir tu horario MiTec para sincronizar horas libres.';
+      if (userText.toLowerCase().includes('ensayo') || userText.toLowerCase().includes('agenda')) {
+        reply = 'Tu próximo ensayo de Ensamble Musical es este viernes a las 17:00 hs en el Salón A-201.';
+      } else if (userText.toLowerCase().includes('salon') || userText.toLowerCase().includes('permiso')) {
+        reply = 'Para reservar un salón de ensayo, ve a la pestaña "Salones" y genera tu pase PDF.';
       }
-      setChatMessages((prev) => [...prev, { sender: 'bot', text: response }]);
+      setChatMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
     }, 800);
   };
 
-  // Load live rehearsals and songs from Neon Postgres
-  useEffect(() => {
-    async function loadLiveStudentData() {
-      try {
-        const [liveRehearsals, liveSongs] = await Promise.all([
-          fetchStudentRehearsals(),
-          fetchStudentSongs(),
-        ]);
-        setRehearsals(liveRehearsals);
-        setSongs(liveSongs);
-      } catch (err) {
-        console.error('Error fetching student data:', err);
-      }
-    }
-    if (student) {
-      loadLiveStudentData();
-    }
-  }, [student]);
-
-  const handleRegisterStudent = async (newStudent: StudentProfile) => {
-    const persisted = await registerStudentInNeon(newStudent);
-    setStudent(persisted);
-    localStorage.setItem('organizarte_student_session', JSON.stringify(persisted));
+  const handleRegisterStudent = (newStudent: StudentProfile) => {
+    setStudent(newStudent);
+    localStorage.setItem('organizarte_student_session', JSON.stringify(newStudent));
   };
 
-  const handleLoginStudent = async (emailOrMatricula: string) => {
-    const realStudent = await fetchStudentProfileByEmail(emailOrMatricula);
-    const loggedUser: StudentProfile = realStudent || {
+  const handleLoginStudent = (matricula: string) => {
+    const defaultStudent: StudentProfile = {
       id: `std-${Date.now()}`,
-      name: emailOrMatricula.includes('@') ? emailOrMatricula.split('@')[0] : 'Alumno Tec',
-      email: emailOrMatricula.includes('@') ? emailOrMatricula : 'prueba@tec.mx',
-      matricula: emailOrMatricula.startsWith('A') ? emailOrMatricula.toUpperCase() : 'A0123456',
+      name: 'Alejandro Prueba',
+      email: 'a0123456@tec.mx',
+      matricula: matricula || 'A0123456',
       campus: 'Tec Campus Laguna (Torreón)',
       role: 'STUDENT',
       status: 'ACTIVE',
       companyName: 'Ensamble Musical Tec',
       discipline: 'MUSICA',
       section: 'Piano',
-      createdAt: '2026-08-09',
+      createdAt: new Date().toISOString(),
     };
-    setStudent(loggedUser);
-    localStorage.setItem('organizarte_student_session', JSON.stringify(loggedUser));
+    setStudent(defaultStudent);
+    localStorage.setItem('organizarte_student_session', JSON.stringify(defaultStudent));
   };
 
   const handleLogout = () => {
@@ -156,7 +129,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', minHeight: '100vh', background: 'var(--bg-dark)', position: 'relative' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', minHeight: '100vh', background: 'var(--bg-dark)', position: 'relative', paddingBottom: '70px' }}>
       {/* PWA Mobile Header */}
       <StudentHeader student={student} pushEnabled={pushEnabled} setPushEnabled={setPushEnabled} />
 
@@ -165,123 +138,140 @@ export const App: React.FC = () => {
         {/* Pending Activation Banner if applicable */}
         <AccountStatusBanner student={student} />
 
-        {/* Top Hero: mi ID Digital Credential Card */}
-        <MiIDDigitalCard student={student} />
+        {/* TAB 1: INICIO (Home Screen with Credential & Services) */}
+        {activeTab === 'home' && (
+          <>
+            {/* Top Hero: mi ID Digital Credential Card */}
+            <MiIDDigitalCard student={student} />
 
-        {/* misServicios@tec Touchable Accordion List */}
-        {activeTab === 'agenda' && (
-          <div className="mitec-card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                misServicios@arteycultura
-              </span>
-              <Layers style={{ width: '16px', height: '16px', color: '#64748b' }} />
+            {/* servicios@arteycultura Touchable Accordion List */}
+            <div className="mitec-card" style={{ padding: '0', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  servicios@arteycultura
+                </span>
+                <Layers style={{ width: '16px', height: '16px', color: '#64748b' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* Service 1: Horario & IA Scanner (Cyan Strip) */}
+                <div className="mitec-accordion-item mitec-strip-cyan" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <button
+                    onClick={() => setOpenService(openService === 'horario' ? null : 'horario')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} />
+                      <span>Horario & IA Scanner</span>
+                    </div>
+                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'horario' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  </button>
+                  {openService === 'horario' && (
+                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
+                      <p style={{ marginBottom: '8px' }}>Sube la captura de tu horario de MiTec para detectar horas libres automáticamente.</p>
+                      <button className="btn-pwa-primary" onClick={() => setActiveTab('schedule-ai')} style={{ fontSize: '0.82rem', padding: '10px' }}>
+                        Cargar Captura de Horario
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Service 2: Ensayos & Agenda (Magenta Strip) */}
+                <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <button
+                    onClick={() => setOpenService(openService === 'ensayos' ? null : 'ensayos')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Calendar style={{ width: '16px', height: '16px', color: '#ec4899' }} />
+                      <span>Ensayos & Agenda</span>
+                    </div>
+                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  </button>
+                  {openService === 'ensayos' && (
+                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
+                      <p style={{ marginBottom: '8px' }}>Revisa el calendario completo de ensayos, llamados generales y confirma asistencia por QR.</p>
+                      <button className="btn-pwa-primary" onClick={() => setActiveTab('agenda')} style={{ fontSize: '0.82rem', padding: '10px' }}>
+                        Ver Calendario de Ensayos
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Service 3: Repertorio & Audio Player (Purple Strip) */}
+                <div className="mitec-accordion-item mitec-strip-purple">
+                  <button
+                    onClick={() => setOpenService(openService === 'repertorio' ? null : 'repertorio')}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Music style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
+                      <span>Repertorio & Audio</span>
+                    </div>
+                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  </button>
+                  {openService === 'repertorio' && (
+                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
+                      <p style={{ marginBottom: '8px' }}>Escucha tus maquetas y guías de audio aisladas por voz o instrumento.</p>
+                      <button className="btn-pwa-secondary" onClick={() => setActiveTab('practice')} style={{ fontSize: '0.82rem', padding: '10px' }}>
+                        Abrir Reproductor de Práctica
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Service 1: mi Horario & IA Scanner (Cyan Strip) */}
-              <div className="mitec-accordion-item mitec-strip-cyan" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <button
-                  onClick={() => setOpenService(openService === 'horario' ? null : 'horario')}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    color: '#0f172a',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} />
-                    <span>Horario & IA Scanner</span>
-                  </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'horario' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                </button>
-                {openService === 'horario' && (
-                  <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                    <p style={{ marginBottom: '8px' }}>Sube la captura de tu horario de MiTec para detectar horas libres automáticamente.</p>
-                    <button className="btn-pwa-primary" onClick={() => setActiveTab('schedule-ai')} style={{ fontSize: '0.82rem', padding: '10px' }}>
-                      Cargar Captura de Horario
-                    </button>
-                  </div>
-                )}
+            {/* Welcome Greeting Banner Card */}
+            <div className="mitec-card" style={{ background: 'linear-gradient(135deg, #e0f2fe 0%, #f3e8ff 100%)', border: '1px solid #cbd5e1' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0033a0', textTransform: 'uppercase', marginBottom: '4px' }}>
+                💙 TEC DE MONTERREY • ARTE Y CULTURA
               </div>
-
-              {/* Service 2: Ensayos & Llamados (Magenta Strip) */}
-              <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <button
-                  onClick={() => setOpenService(openService === 'ensayos' ? null : 'ensayos')}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    color: '#0f172a',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Calendar style={{ width: '16px', height: '16px', color: '#ec4899' }} />
-                    <span>Ensayos & Agenda</span>
-                  </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                </button>
-                {openService === 'ensayos' && (
-                  <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                    <p style={{ marginBottom: '8px' }}>Revisa horarios, salones asignados y confirma asistencia por QR.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Service 3: Repertorio & Audio Player (Purple Strip) */}
-              <div className="mitec-accordion-item mitec-strip-purple">
-                <button
-                  onClick={() => setOpenService(openService === 'repertorio' ? null : 'repertorio')}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    color: '#0f172a',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Music style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
-                    <span>Repertorio & Audio</span>
-                  </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                </button>
-                {openService === 'repertorio' && (
-                  <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                    <p style={{ marginBottom: '8px' }}>Escucha tus maquetas y guías de audio aisladas por voz o instrumento.</p>
-                    <button className="btn-pwa-secondary" onClick={() => setActiveTab('practice')} style={{ fontSize: '0.82rem', padding: '10px' }}>
-                      Abrir Reproductor de Práctica
-                    </button>
-                  </div>
-                )}
-              </div>
+              <h2 style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>¡Hola, {student.name}!</h2>
+              <p style={{ fontSize: '0.82rem', color: '#475569', marginTop: '4px' }}>
+                {student.companyName} • <strong>{student.section}</strong> ({student.matricula})
+              </p>
             </div>
-          </div>
+          </>
         )}
 
-        {/* Tab Views */}
+        {/* TAB 2: AGENDA INDEPENDIENTE (Dedicated Rehearsals & Calendar View) */}
         {activeTab === 'agenda' && (
           <StudentAgenda
             student={student}
@@ -292,16 +282,20 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* TAB 3: IA HORARIO */}
         {activeTab === 'schedule-ai' && (
           <ScheduleUploadAI currentSlots={scheduleSlots} onUpdateSlots={handleUpdateSlots} />
         )}
 
+        {/* TAB 4: PRÁCTICA */}
         {activeTab === 'practice' && <AudioPracticePlayer songs={songs} />}
 
+        {/* TAB 5: SALONES */}
         {activeTab === 'rooms' && (
           <RoomPassPDF student={student} bookings={bookings} onRequestBooking={handleRequestBooking} />
         )}
 
+        {/* TAB 6: PERFIL */}
         {activeTab === 'profile' && (
           <div className="mitec-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h2 style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>Perfil Tec Integrante</h2>
@@ -413,8 +407,16 @@ export const App: React.FC = () => {
         <JustificationForm rehearsal={justifyingRehearsal} onClose={() => setJustifyingRehearsal(null)} />
       )}
 
-      {/* PWA Bottom Navigation Bar */}
+      {/* PWA Bottom Navigation Bar with "Inicio" as Tab 1 */}
       <nav className="bottom-nav">
+        <button
+          className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+          onClick={() => setActiveTab('home')}
+        >
+          <Home style={{ width: '22px', height: '22px' }} />
+          <span>Inicio</span>
+        </button>
+
         <button
           className={`nav-item ${activeTab === 'agenda' ? 'active' : ''}`}
           onClick={() => setActiveTab('agenda')}
@@ -437,14 +439,6 @@ export const App: React.FC = () => {
         >
           <Music style={{ width: '22px', height: '22px' }} />
           <span>Práctica</span>
-        </button>
-
-        <button
-          className={`nav-item ${activeTab === 'rooms' ? 'active' : ''}`}
-          onClick={() => setActiveTab('rooms')}
-        >
-          <Building2 style={{ width: '22px', height: '22px' }} />
-          <span>Salones</span>
         </button>
 
         <button
