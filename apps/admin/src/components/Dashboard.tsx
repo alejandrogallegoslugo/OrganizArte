@@ -429,8 +429,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 }}
               >
                 <ChevronRight style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* COLUMN 2: crear@arteycultura Accordion Card (With Colorful Left Strips) */}
         <div className="mitec-card" style={{ padding: '0', overflow: 'hidden', height: '100%' }}>
