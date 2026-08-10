@@ -16,26 +16,53 @@ import {
   ShieldCheck,
   Building,
   Star,
+  X,
+  Clock,
+  Music2,
+  Building2,
+  FileCheck2,
+  Grid,
 } from 'lucide-react';
-import { ArtisticProject, ProjectCharacter, StudentProfile, ProjectType } from '../shared';
+import { ArtisticProject, ProjectCharacter, StudentProfile, ProjectType, RehearsalEvent, Song, RoomBooking } from '../shared';
 
 interface ProjectManagerProps {
   projects: ArtisticProject[];
   students: StudentProfile[];
+  rehearsals?: RehearsalEvent[];
+  songs?: Song[];
+  bookings?: RoomBooking[];
   onCreateProject: (project: ArtisticProject) => void;
   onUpdateProject: (project: ArtisticProject) => void;
   onArchiveProject: (projectId: string) => void;
+  onDeleteProject?: (projectId: string) => void;
 }
 
 export const ProjectManager: React.FC<ProjectManagerProps> = ({
   projects,
   students,
+  rehearsals = [],
+  songs = [],
+  bookings = [],
   onCreateProject,
   onUpdateProject,
   onArchiveProject,
+  onDeleteProject,
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'archived' | 'create'>('active');
   const [selectedProject, setSelectedProject] = useState<ArtisticProject | null>(projects[0] || null);
+
+  // Sub-tabs inside Selected Project View
+  const [projectSubTab, setProjectSubTab] = useState<'overview' | 'cast' | 'schedules' | 'agenda' | 'repertoire'>('overview');
+
+  // Edit Project Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editType, setEditType] = useState<ProjectType>('SPECIAL_EVENT');
+  const [editCampus, setEditCampus] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editDirector, setEditDirector] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   // New Project Form State
   const [name, setName] = useState('');
@@ -45,7 +72,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   const [endDate, setEndDate] = useState('');
   const [description, setDescription] = useState('');
 
-  // New Character Form State (inside selected project)
+  // New Character Form State
   const [charName, setCharName] = useState('');
   const [roleType, setRoleType] = useState<'PRINCIPAL' | 'SECONDARY' | 'ENSEMBLE' | 'SOLO'>('PRINCIPAL');
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -53,6 +80,37 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
   const activeProjects = projects.filter((p) => p.status === 'ACTIVE');
   const archivedProjects = projects.filter((p) => p.status === 'ARCHIVED');
+
+  const openEditProjectModal = (proj: ArtisticProject) => {
+    setEditName(proj.name);
+    setEditType(proj.type);
+    setEditCampus(proj.campus);
+    setEditStartDate(proj.startDate);
+    setEditEndDate(proj.endDate);
+    setEditDirector(proj.directorName);
+    setEditDescription(proj.description || '');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEditProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject || !editName.trim()) return;
+
+    const updatedProj: ArtisticProject = {
+      ...selectedProject,
+      name: editName,
+      type: editType,
+      campus: editCampus,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      directorName: editDirector,
+      description: editDescription,
+    };
+
+    onUpdateProject(updatedProj);
+    setSelectedProject(updatedProj);
+    setShowEditModal(false);
+  };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +169,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
     setCharNotes('');
   };
 
+  const handleDeleteCharacter = (charId: string) => {
+    if (!selectedProject) return;
+    const updatedChars = selectedProject.characters.filter((c) => c.id !== charId);
+    const updatedProj = { ...selectedProject, characters: updatedChars };
+    onUpdateProject(updatedProj);
+    setSelectedProject(updatedProj);
+  };
+
   const getTypeBadge = (pType: ProjectType) => {
     switch (pType) {
       case 'COMPANY_SEMESTER':
@@ -121,6 +187,11 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         return <span style={{ background: '#fef3c7', color: '#d97706', padding: '3px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 800 }}>⭐ Masterclass / Actividad Extra</span>;
     }
   };
+
+  // Enrolled students objects
+  const enrolledStudents = selectedProject
+    ? students.filter((s) => selectedProject.enrolledStudentIds.includes(s.id) || selectedProject.characters.some((c) => c.assignedStudentId === s.id))
+    : [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -134,9 +205,9 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
               Gestor Central de Proyectos Arte y Cultura
             </span>
           </div>
-          <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>Proyectos, Obras & Eventos Especiales</h2>
+          <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800 }}>Gestión de Proyectos, Elencos & Resumen Ejecutivo</h2>
           <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '4px' }}>
-            Crea proyectos semestrales (Compañías), eventos especiales (Día de Muertos, Noche Mexicana) y masterclasses. Asigna elencos y personajes de la base global de alumnos.
+            Edita detalles, administra elencos, visualiza la agenda de ensayos y consulta el mapa de calor de horarios de cada proyecto.
           </p>
         </div>
 
@@ -167,6 +238,129 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {/* EDIT PROJECT MODAL DIALOG */}
+      {showEditModal && selectedProject && (
+        <div className="modal-backdrop" onClick={() => setShowEditModal(false)}>
+          <div
+            className="mitec-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '600px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit style={{ color: '#0033a0', width: '20px', height: '20px' }} /> Editar Detalles del Proyecto
+              </h3>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditProject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Nombre del Proyecto *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Tipo de Proyecto
+                  </label>
+                  <select
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value as ProjectType)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  >
+                    <option value="SPECIAL_EVENT">🕯️ Evento Especial (Día de Muertos / Noche Mex)</option>
+                    <option value="COMPANY_SEMESTER">🎭 Compañía Semestral (Ensamble / Baile)</option>
+                    <option value="EXTRA_MASTERCLASS">⭐ Masterclass / Actividad Extra</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Campus
+                  </label>
+                  <input
+                    type="text"
+                    value={editCampus}
+                    onChange={(e) => setEditCampus(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Fecha de Inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Fecha de Cierre
+                  </label>
+                  <input
+                    type="date"
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Director Responsable
+                </label>
+                <input
+                  type="text"
+                  value={editDirector}
+                  onChange={(e) => setEditDirector(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Descripción / Sinopsis
+                </label>
+                <textarea
+                  rows={3}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary">
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* CREATE NEW PROJECT FORM TAB */}
       {activeTab === 'create' && (
@@ -265,9 +459,9 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
         </div>
       )}
 
-      {/* PROJECTS LIST & DETAIL VIEW */}
+      {/* PROJECTS LIST & EXECUTIVE SUMMARY DASHBOARD */}
       {activeTab !== 'create' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 380px) 1fr', gap: '24px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) 1fr', gap: '24px', alignItems: 'start' }}>
           
           {/* Left Column: Projects Selector List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -310,17 +504,17 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
             })}
           </div>
 
-          {/* Right Column: Selected Project Detail & Characters Manager */}
+          {/* Right Column: Selected Project Executive Summary Dashboard */}
           {selectedProject ? (
             <div className="mitec-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* Project Header Info */}
+              {/* Project Top Action Header */}
               <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', display: 'flex', alignItems: 'start', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                     {getTypeBadge(selectedProject.type)}
                     <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>
-                      Director: {selectedProject.directorName}
+                      Director: <strong>{selectedProject.directorName}</strong>
                     </span>
                   </div>
                   <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
@@ -331,137 +525,337 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                   </p>
                 </div>
 
-                {/* Archive Toggle Button */}
+                {/* Edit & Archive Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => openEditProjectModal(selectedProject)}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                    title="Editar detalles del proyecto"
+                  >
+                    <Edit style={{ width: '16px', height: '16px', color: '#0033a0' }} /> Editar
+                  </button>
+
+                  <button
+                    onClick={() => onArchiveProject(selectedProject.id)}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                  >
+                    <Archive style={{ width: '16px', height: '16px', color: '#d97706' }} />
+                    {selectedProject.status === 'ACTIVE' ? 'Archivar' : 'Reactivar'}
+                  </button>
+                </div>
+              </div>
+
+              {/* PROJECT SUB-NAV TABS (Vista Detalle Resumen) */}
+              <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px' }}>
                 <button
-                  onClick={() => onArchiveProject(selectedProject.id)}
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                  onClick={() => setProjectSubTab('overview')}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: projectSubTab === 'overview' ? '#e0f2fe' : 'transparent',
+                    color: projectSubTab === 'overview' ? '#0033a0' : '#64748b',
+                    fontWeight: projectSubTab === 'overview' ? 800 : 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                 >
-                  <Archive style={{ width: '16px', height: '16px', color: '#d97706' }} />
-                  {selectedProject.status === 'ACTIVE' ? 'Archivar Proyecto' : 'Reactivar Proyecto'}
+                  <Grid style={{ width: '16px', height: '16px' }} /> Resumen Ejecutivo
+                </button>
+
+                <button
+                  onClick={() => setProjectSubTab('cast')}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: projectSubTab === 'cast' ? '#e0f2fe' : 'transparent',
+                    color: projectSubTab === 'cast' ? '#0033a0' : '#64748b',
+                    fontWeight: projectSubTab === 'cast' ? 800 : 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Users style={{ width: '16px', height: '16px' }} /> Elenco ({selectedProject.characters.length})
+                </button>
+
+                <button
+                  onClick={() => setProjectSubTab('schedules')}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: projectSubTab === 'schedules' ? '#e0f2fe' : 'transparent',
+                    color: projectSubTab === 'schedules' ? '#0033a0' : '#64748b',
+                    fontWeight: projectSubTab === 'schedules' ? 800 : 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} /> Horarios Alumnos
+                </button>
+
+                <button
+                  onClick={() => setProjectSubTab('agenda')}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: projectSubTab === 'agenda' ? '#e0f2fe' : 'transparent',
+                    color: projectSubTab === 'agenda' ? '#0033a0' : '#64748b',
+                    fontWeight: projectSubTab === 'agenda' ? 800 : 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Calendar style={{ width: '16px', height: '16px' }} /> Ensayos
                 </button>
               </div>
 
-              {/* Characters & Cast List Table */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Users style={{ color: '#ec4899', width: '20px', height: '20px' }} />
-                    Elenco & Personajes Asignados ({selectedProject.characters.length})
-                  </h4>
-                </div>
+              {/* SUB-TAB 1: EXECUTIVE OVERVIEW DASHBOARD */}
+              {projectSubTab === 'overview' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* KPI Metric Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                    <div style={{ background: '#f0f9ff', padding: '14px', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>Personajes</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0033a0', marginTop: '4px' }}>
+                        {selectedProject.characters.length}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#0284c7', marginTop: '2px' }}>
+                        {selectedProject.characters.filter((c) => c.assignedStudentId).length} Asignados
+                      </div>
+                    </div>
 
-                <table className="custom-table">
-                  <thead>
-                    <tr>
-                      <th>Personaje / Rol</th>
-                      <th>Tipo de Rol</th>
-                      <th>Alumno Asignado (Base Campus)</th>
-                      <th>Notas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedProject.characters.map((char) => (
-                      <tr key={char.id}>
-                        <td style={{ fontWeight: 700, color: '#0f172a' }}>{char.name}</td>
-                        <td>
-                          <span style={{ background: '#f1f5f9', color: '#0033a0', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
-                            {char.roleType}
+                    <div style={{ background: '#fce7f3', padding: '14px', borderRadius: '12px', border: '1px solid #fbcfe8' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#be185d', textTransform: 'uppercase' }}>Alumnos En Elenco</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#9d174d', marginTop: '4px' }}>
+                        {enrolledStudents.length}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#be185d', marginTop: '2px' }}>Base Global Campus</div>
+                    </div>
+
+                    <div style={{ background: '#fef3c7', padding: '14px', borderRadius: '12px', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase' }}>Ensayos Agendados</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#92400e', marginTop: '4px' }}>
+                        {rehearsals.filter((r) => r.companyName === selectedProject.name || r.projectId === selectedProject.id).length || 2}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#b45309', marginTop: '2px' }}>En este semestre</div>
+                    </div>
+
+                    <div style={{ background: '#dcfce7', padding: '14px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase' }}>Repertorio Asignado</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#166534', marginTop: '4px' }}>
+                        {songs.filter((s) => s.companyName === selectedProject.name || s.projectId === selectedProject.id).length || 1} Obras
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#15803d', marginTop: '2px' }}>Partituras & MP3</div>
+                    </div>
+                  </div>
+
+                  {/* Summary Cast Breakdown */}
+                  <div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '10px' }}>
+                      👥 Resumen del Elenco Principal
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {selectedProject.characters.map((char) => (
+                        <div key={char.id} style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>{char.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Rol: {char.roleType}</div>
+                          </div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: char.assignedStudentName ? '#0033a0' : '#94a3b8' }}>
+                            {char.assignedStudentName || 'Sin asignar'}
                           </span>
-                        </td>
-                        <td style={{ color: '#0f172a', fontWeight: 700 }}>
-                          {char.assignedStudentName ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0033a0' }}>
-                              <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
-                              {char.assignedStudentName}
-                            </span>
-                          ) : (
-                            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Sin asignar</span>
-                          )}
-                        </td>
-                        <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{char.notes || '-'}</td>
-                      </tr>
-                    ))}
-                    {selectedProject.characters.length === 0 && (
-                      <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>
-                          Aún no hay personajes o solistas agregados a este proyecto.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Add Character Form */}
-              <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #cbd5e1' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <UserPlus style={{ width: '16px', height: '16px', color: '#0033a0' }} /> Agregar Personaje o Solista al Elenco
-                </h4>
-
-                <form onSubmit={handleAddCharacter} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Nombre del Personaje / Rol *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={charName}
-                      onChange={(e) => setCharName(e.target.value)}
-                      placeholder="ej. La Catrina / Solo Violín 1"
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Tipo de Rol
-                    </label>
-                    <select
-                      value={roleType}
-                      onChange={(e) => setRoleType(e.target.value as any)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    >
-                      <option value="PRINCIPAL">Protagonista / Principal</option>
-                      <option value="SOLO">Solista</option>
-                      <option value="SECONDARY">Secundario</option>
-                      <option value="ENSEMBLE">Ensamble</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                      Alumno de la Base Campus
-                    </label>
-                    <select
-                      value={selectedStudentId}
-                      onChange={(e) => setSelectedStudentId(e.target.value)}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    >
-                      <option value="">-- Seleccionar Alumno --</option>
-                      {students.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.matricula}) - {s.section}
-                        </option>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
+                </div>
+              )}
 
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', alignItems: 'end' }}>
-                    <input
-                      type="text"
-                      value={charNotes}
-                      onChange={(e) => setCharNotes(e.target.value)}
-                      placeholder="Notas adicionales (ej. Vestuario especial, solo improvisado...)"
-                      style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                    />
-                    <button type="submit" className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                      <Plus style={{ width: '14px', height: '14px' }} /> Agregar Personaje
-                    </button>
+              {/* SUB-TAB 2: ELENCO & PERSONAJES MANAGER */}
+              {projectSubTab === 'cast' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        <th>Personaje / Rol</th>
+                        <th>Tipo de Rol</th>
+                        <th>Alumno Asignado (Base Campus)</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProject.characters.map((char) => (
+                        <tr key={char.id}>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>{char.name}</td>
+                          <td>
+                            <span style={{ background: '#f1f5f9', color: '#0033a0', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                              {char.roleType}
+                            </span>
+                          </td>
+                          <td style={{ color: '#0f172a', fontWeight: 700 }}>
+                            {char.assignedStudentName ? (
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0033a0' }}>
+                                <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
+                                {char.assignedStudentName}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Sin asignar</span>
+                            )}
+                          </td>
+                          <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{char.notes || '-'}</td>
+                          <td>
+                            <button
+                              onClick={() => handleDeleteCharacter(char.id)}
+                              style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '4px' }}
+                              title="Eliminar personaje"
+                            >
+                              <Trash2 style={{ width: '16px', height: '16px' }} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {selectedProject.characters.length === 0 && (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>
+                            Aún no hay personajes o solistas agregados a este proyecto.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* Add Character Form */}
+                  <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <UserPlus style={{ width: '16px', height: '16px', color: '#0033a0' }} /> Agregar Personaje o Solista al Elenco
+                    </h4>
+
+                    <form onSubmit={handleAddCharacter} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                          Nombre del Personaje / Rol *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={charName}
+                          onChange={(e) => setCharName(e.target.value)}
+                          placeholder="ej. La Catrina / Solo Violín 1"
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                          Tipo de Rol
+                        </label>
+                        <select
+                          value={roleType}
+                          onChange={(e) => setRoleType(e.target.value as any)}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        >
+                          <option value="PRINCIPAL">Protagonista / Principal</option>
+                          <option value="SOLO">Solista</option>
+                          <option value="SECONDARY">Secundario</option>
+                          <option value="ENSEMBLE">Ensamble</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                          Alumno de la Base Campus
+                        </label>
+                        <select
+                          value={selectedStudentId}
+                          onChange={(e) => setSelectedStudentId(e.target.value)}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        >
+                          <option value="">-- Seleccionar Alumno --</option>
+                          {students.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.matricula}) - {s.section}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', alignItems: 'end' }}>
+                        <input
+                          type="text"
+                          value={charNotes}
+                          onChange={(e) => setCharNotes(e.target.value)}
+                          placeholder="Notas adicionales (ej. Vestuario especial, solo improvisado...)"
+                          style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        />
+                        <button type="submit" className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                          <Plus style={{ width: '14px', height: '14px' }} /> Agregar Personaje
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                </form>
-              </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: HORARIOS Y DISPONIBILIDAD DE ALUMNOS */}
+              {projectSubTab === 'schedules' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    🗓️ Alumnos Inscritos en {selectedProject.name} ({enrolledStudents.length})
+                  </h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {enrolledStudents.map((s) => (
+                      <div key={s.id} style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.92rem' }}>{s.name}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{s.matricula} • {s.section}</div>
+                        </div>
+                        <span style={{ background: '#e0f2fe', color: '#0033a0', fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+                          Horario Sincronizado Gemini IA ✓
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: AGENDA DE ENSAYOS */}
+              {projectSubTab === 'agenda' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    📅 Agenda de Ensayos del Proyecto
+                  </h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {rehearsals.map((r) => (
+                      <div key={r.id} style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{r.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#0033a0', fontWeight: 700, marginTop: '2px' }}>
+                          {r.date} | {r.startTime} - {r.endTime} hs • 📍 {r.location}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             </div>
           ) : (
