@@ -220,7 +220,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <Briefcase style={{ width: '20px', height: '20px' }} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>work@tec</h3>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>work@arteycultura</h3>
                 <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Gestión de la Compañía Artística</span>
               </div>
             </div>

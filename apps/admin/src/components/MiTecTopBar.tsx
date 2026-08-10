@@ -8,7 +8,6 @@ import {
   HelpCircle,
   Smile,
   CheckCircle2,
-  SlidersHorizontal,
 } from 'lucide-react';
 
 interface MiTecTopBarProps {
@@ -46,10 +45,23 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
       zIndex: 150,
       boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
     }}>
-      {/* Left: MiTec Brand & Profile Changer */}
+      {/* Left: Official Logo + Multi-Colored Vertical Bars + Arte y Cultura Brand Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {/* MiTec Multi-Colored Stripes Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Official Logo Image */}
+          <img
+            src="/logo.png"
+            alt="OrganizArte Logo"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              objectFit: 'cover',
+              boxShadow: '0 4px 14px rgba(6, 182, 212, 0.45)'
+            }}
+          />
+
+          {/* Icon Multi-Colored Vertical Bars */}
           <div style={{ display: 'flex', gap: '3px', height: '28px', alignItems: 'center' }}>
             <span style={{ width: '5px', height: '24px', background: '#f59e0b', borderRadius: '3px' }} />
             <span style={{ width: '5px', height: '28px', background: '#ec4899', borderRadius: '3px' }} />
@@ -57,9 +69,10 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
             <span style={{ width: '5px', height: '26px', background: '#1d4ed8', borderRadius: '3px' }} />
             <span style={{ width: '5px', height: '20px', background: '#06b6d4', borderRadius: '3px' }} />
           </div>
+
           <div>
             <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', fontFamily: 'Outfit, sans-serif' }}>
-              mitec
+              Arte y Cultura
             </span>
             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ec4899', display: 'block', marginTop: '-4px' }}>
               colaboradores
@@ -94,7 +107,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               position: 'absolute',
               top: '110%',
               left: 0,
-              width: '220px',
+              width: '230px',
               background: '#ffffff',
               border: '1px solid #e2e8f0',
               borderRadius: '12px',
@@ -103,7 +116,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
               zIndex: 200
             }}>
               <div style={{ padding: '8px 10px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                Perfiles MiTec
+                Perfiles de Arte y Cultura
               </div>
               <button style={{ width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '8px', background: '#e0f2fe', color: '#0033a0', border: 'none', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <span>Director de Compañía</span>
@@ -135,7 +148,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           type="text"
           value={searchQuery}
           onChange={handleSearchChange}
-          placeholder="Buscar personas, ensayos, partituras o servicios..."
+          placeholder="Buscar personas o servicios..."
           style={{
             width: '100%',
             padding: '10px 16px 10px 42px',
@@ -159,7 +172,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           <Bookmark style={{ width: '20px', height: '20px' }} />
         </button>
 
-        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '6px' }} title="Servicios Tec">
+        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '6px' }} title="Servicios Arte y Cultura">
           <Grid style={{ width: '20px', height: '20px' }} />
         </button>
 
@@ -167,7 +180,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '6px', position: 'relative' }}
-            title="Notificaciones MiTec"
+            title="Notificaciones"
           >
             <Bell style={{ width: '20px', height: '20px' }} />
             <span style={{
@@ -182,7 +195,7 @@ export const MiTecTopBar: React.FC<MiTecTopBarProps> = ({
           </button>
         </div>
 
-        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '6px' }} title="Ayuda MiTec">
+        <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '6px' }} title="Ayuda Arte y Cultura">
           <HelpCircle style={{ width: '20px', height: '20px' }} />
         </button>
 

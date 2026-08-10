@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Section Header: MIS SERVICIOS */}
+        {/* Section Header: SERVICIOS DE ARTE Y CULTURA */}
         <div style={{
           fontSize: '0.7rem',
           fontWeight: 800,
@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           letterSpacing: '0.08em',
           padding: '8px 12px 6px 12px',
         }}>
-          MIS SERVICIOS TEC
+          SERVICIOS DE ARTE Y CULTURA
         </div>
 
         {/* Services Links */}
