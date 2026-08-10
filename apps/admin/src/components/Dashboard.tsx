@@ -317,7 +317,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 }}
               >
                 <span>mis Salones Tec & Permisos</span>
-                <ChevronDown style={{ width: '16px', height: '16px', transform openSection === 'salones' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'salones' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'salones' && (
                 <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -348,7 +348,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 }}
               >
                 <span>mi Pase de Lista QR & Asistencia</span>
-                <ChevronDown style={{ width: '16px', height: '16px', transform openSection === 'asistencia' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <ChevronDown style={{ width: '16px', height: '16px', transform: openSection === 'asistencia' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {openSection === 'asistencia' && (
                 <div style={{ padding: '0 20px 16px 20px', fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '8px' }}>

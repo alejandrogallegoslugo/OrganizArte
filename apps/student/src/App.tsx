@@ -266,7 +266,7 @@ export const App: React.FC = () => {
                     <Music style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
                     <span>mi Repertorio & Audio</span>
                   </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', transform openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
                 {openService === 'repertorio' && (
                   <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>

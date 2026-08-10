@@ -243,6 +243,8 @@ export const App: React.FC = () => {
       isActive: true,
     };
     setCampuses((prev) => [newCampus, ...prev]);
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-dark)' }}>
       <MiTecTopBar adminName={adminUser.name} />
