@@ -139,15 +139,25 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     }
   };
 
+  const [heatmapDisciplineFilter, setHeatmapDisciplineFilter] = useState<string>('ALL');
+
+  const filteredHeatmapStudents = activeStudents.filter(
+    (s) => heatmapDisciplineFilter === 'ALL' || s.discipline === heatmapDisciplineFilter
+  );
+  const filteredStudentIds = filteredHeatmapStudents.map((s) => s.id);
+
   const calculateAvailability = (day: string, time: string) => {
-    const total = activeStudents.length || 1;
+    const total = filteredHeatmapStudents.length || 1;
     const occupied = currentStudentSchedules.filter((s) => {
+      const isStudentInFilter = heatmapDisciplineFilter === 'ALL' || filteredStudentIds.includes(s.studentId);
+      if (!isStudentInFilter) return false;
+
       const sStart = s.startTime.substring(0, 5);
       const sEnd = s.endTime.substring(0, 5);
       return s.dayOfWeek === day && sStart <= time && sEnd > time;
     }).length;
 
-    const available = total - occupied;
+    const available = Math.max(0, total - occupied);
     const percentage = Math.round((available / total) * 100);
     return { available, total, percentage };
   };
@@ -282,8 +292,10 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       {/* VIEW 1: Heatmap Grid */}
       {activeSubTab === 'heatmap' && (
         <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>Mapa de Calor de Ensayos ({activeStudents.length} Alumnos Activos)</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 800 }}>
+              Mapa de Calor de Ensayos ({filteredHeatmapStudents.length} Alumnos)
+            </h3>
             
             {/* Legend */}
             <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -297,6 +309,116 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                 <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(225, 29, 72, 0.3)' }}></span> Ocupado (&lt;50% Libres)
               </span>
             </div>
+          </div>
+
+          {/* Area / Discipline Filter Selector */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', background: '#f8fafc', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0033a0', display: 'flex', alignItems: 'center', gap: '6px', marginRight: '6px' }}>
+              <Filter style={{ width: '16px', height: '16px' }} /> Filtrar por Área:
+            </span>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('ALL')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'ALL' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'ALL' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                boxShadow: heatmapDisciplineFilter === 'ALL' ? '0 2px 8px rgba(0,51,160,0.2)' : 'none',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              🌐 Todos ({activeStudents.length})
+            </button>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('MUSICA')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'MUSICA' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'MUSICA' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              🎺 Músicos ({activeStudents.filter((s) => s.discipline === 'MUSICA').length})
+            </button>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('CANTO')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'CANTO' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'CANTO' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              🎤 Cantantes ({activeStudents.filter((s) => s.discipline === 'CANTO').length})
+            </button>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('BAILE')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'BAILE' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'BAILE' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              💃 Bailarines / Danza ({activeStudents.filter((s) => s.discipline === 'BAILE').length})
+            </button>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('TEATRO')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'TEATRO' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'TEATRO' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              🎭 Teatro / Actores ({activeStudents.filter((s) => s.discipline === 'TEATRO').length})
+            </button>
+
+            <button
+              onClick={() => setHeatmapDisciplineFilter('STAFF')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: heatmapDisciplineFilter === 'STAFF' ? '#0033a0' : '#ffffff',
+                color: heatmapDisciplineFilter === 'STAFF' ? '#ffffff' : '#334155',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              🛠️ Staff / Producción ({activeStudents.filter((s) => s.discipline === 'STAFF').length})
+            </button>
           </div>
 
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '4px' }}>
