@@ -1,5 +1,5 @@
 // Live Neon Postgres API Integration for Student PWA (Cloudflare Pages Function + Local Proxy)
-import { StudentProfile, RoomBooking, RehearsalEvent, Song } from './shared';
+import { StudentProfile, RoomBooking, RehearsalEvent, Song, TimeSlot } from './shared';
 
 async function executeSql(query: string, params: any[] = []) {
   // 1. Primary: Relative Cloudflare Pages Function /api/db (Zero CORS, Same-Origin, Cloudflare Edge)
@@ -68,8 +68,8 @@ export async function fetchStudentProfileByEmail(emailOrMatricula: string): Prom
 
 // 0b. Save Student Schedule Course in Neon DB
 export async function saveStudentScheduleCourseInNeon(studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName: string = 'Semestre Agosto - Diciembre 2026', validUntil: string = '2026-12-15') {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
-  const realUserId = userRows[0]?.id || 'bec072db-ee16-4a0a-aa2c-20293633e5d3';
+  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = '${studentId}' OR email = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
+  const realUserId = userRows[0]?.id || studentId;
 
   const query = `
     INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
@@ -78,9 +78,40 @@ export async function saveStudentScheduleCourseInNeon(studentId: string, dayOfWe
   await executeSql(query);
 }
 
+// 0c. Fetch live student schedules from Neon DB for student
+export async function fetchStudentSchedulesInNeon(studentIdOrMatricula: string): Promise<TimeSlot[]> {
+  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentIdOrMatricula}' OR matricula = '${studentIdOrMatricula}' OR email = '${studentIdOrMatricula}' LIMIT 1;`);
+  const realUserId = userRows[0]?.id;
+
+  const filterClause = realUserId ? `WHERE student_id = '${realUserId}'` : '';
+  const rows = await executeSql(`SELECT * FROM student_schedules ${filterClause} ORDER BY day_of_week ASC, start_time ASC;`);
+
+  if (!rows || rows.length === 0) {
+    // If no specific user filter, fallback to all student_schedules if any
+    const allRows = await executeSql(`SELECT * FROM student_schedules ORDER BY day_of_week ASC, start_time ASC;`);
+    return allRows.map((r: any, idx: number) => ({
+      id: r.id || `slot-${idx}`,
+      dayOfWeek: r.day_of_week,
+      startTime: r.start_time,
+      endTime: r.end_time,
+      courseName: r.course_name || 'Clase Académica MiTec',
+      isAcademicClass: r.is_academic_class ?? true,
+    }));
+  }
+
+  return rows.map((r: any, idx: number) => ({
+    id: r.id || `slot-${idx}`,
+    dayOfWeek: r.day_of_week,
+    startTime: r.start_time,
+    endTime: r.end_time,
+    courseName: r.course_name || 'Clase Académica MiTec',
+    isAcademicClass: r.is_academic_class ?? true,
+  }));
+}
+
 export async function clearStudentSchedulesInNeon(studentId: string) {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
-  const realUserId = userRows[0]?.id || 'bec072db-ee16-4a0a-aa2c-20293633e5d3';
+  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = '${studentId}' OR email = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
+  const realUserId = userRows[0]?.id || studentId;
   await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
 }
 

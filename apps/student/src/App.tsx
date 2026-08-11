@@ -30,7 +30,7 @@ import { QRScannerModal } from './components/QRScannerModal';
 import { JustificationForm } from './components/JustificationForm';
 import { StudentChatModal } from './components/StudentChatModal';
 import { createRoomBookingInNeon } from './r2Storage';
-import { fetchStudentRehearsals, fetchStudentSongs, registerStudentInNeon, fetchStudentProfileByEmail } from './api';
+import { fetchStudentRehearsals, fetchStudentSongs, registerStudentInNeon, fetchStudentProfileByEmail, fetchStudentSchedulesInNeon } from './api';
 
 export type StudentPwaTab = 'home' | 'agenda' | 'schedule-ai' | 'practice' | 'rooms' | 'profile';
 
@@ -60,12 +60,14 @@ export const App: React.FC = () => {
     if (student) {
       const loadLiveData = async () => {
         try {
-          const [liveRehearsals, liveSongs] = await Promise.all([
+          const [liveRehearsals, liveSongs, liveSchedules] = await Promise.all([
             fetchStudentRehearsals(),
             fetchStudentSongs(),
+            fetchStudentSchedulesInNeon(student.matricula || student.id),
           ]);
           setRehearsals(liveRehearsals);
           setSongs(liveSongs);
+          setScheduleSlots(liveSchedules);
         } catch (e) {
           console.error('Error fetching live data for student:', e);
         }
@@ -409,4 +411,3 @@ export const App: React.FC = () => {
     </div>
   );
 };
-

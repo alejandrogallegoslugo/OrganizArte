@@ -111,7 +111,7 @@ export const StudentAgenda: React.FC<StudentAgendaProps> = ({
           {rehearsals.length === 0 ? (
             <div className="mitec-card" style={{ textAlign: 'center', padding: '32px 20px', color: '#94a3b8' }}>
               <Calendar style={{ width: '40px', height: '40px', margin: '0 auto 8px auto', opacity: 0.4, color: '#ec4899' }} />
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#475569', marginBottom: '4px' }}>Sin ensayas ni convocatorias programadas</h4>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#475569', marginBottom: '4px' }}>Sin ensayos ni convocatorias programadas</h4>
               <p style={{ fontSize: '0.78rem', color: '#64748b' }}>Tu director o profesor publicará aquí las próximas convocatorias a ensayos.</p>
             </div>
           ) : (
@@ -160,36 +160,77 @@ export const StudentAgenda: React.FC<StudentAgendaProps> = ({
       {(filterView === 'all' || filterView === 'academic') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: '1rem', color: '#64748b', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <BookOpen style={{ width: '18px', height: '18px', color: '#94a3b8' }} /> Horario Académico MiTec
+            <h3 style={{ fontSize: '1rem', color: '#475569', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <BookOpen style={{ width: '18px', height: '18px', color: '#0033a0' }} /> Horario Académico MiTec ({academicSlots.length})
             </h3>
+            <span style={{ fontSize: '0.72rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+              Sincronizado IA
+            </span>
           </div>
 
-          <div
-            className="mitec-card"
-            style={{
-              textAlign: 'center',
-              padding: '24px 16px',
-              background: '#f8fafc',
-              border: '1px border-dashed #cbd5e1',
-              borderRadius: '12px'
-            }}
-          >
-            <BookOpen style={{ width: '36px', height: '36px', margin: '0 auto 8px auto', color: '#94a3b8' }} />
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>Sin materias cargadas</h4>
-            <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '14px' }}>
-              Carga tu horario académico de MiTec escaneando tu captura en la pestaña <strong>"IA Horario"</strong>.
-            </p>
-            {onNavigateTab && (
-              <button
-                className="btn-pwa-primary"
-                onClick={() => onNavigateTab('schedule-ai')}
-                style={{ fontSize: '0.8rem', width: 'auto', padding: '8px 16px', margin: '0 auto' }}
-              >
-                <Sparkles style={{ width: '16px', height: '16px' }} /> Subir mi Horario con IA
-              </button>
-            )}
-          </div>
+          {academicSlots.length === 0 ? (
+            <div
+              className="mitec-card"
+              style={{
+                textAlign: 'center',
+                padding: '24px 16px',
+                background: '#f8fafc',
+                border: '1px border-dashed #cbd5e1',
+                borderRadius: '12px'
+              }}
+            >
+              <BookOpen style={{ width: '36px', height: '36px', margin: '0 auto 8px auto', color: '#94a3b8' }} />
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155', marginBottom: '4px' }}>Sin materias cargadas</h4>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '14px' }}>
+                Carga tu horario académico de MiTec escaneando tu captura en la pestaña <strong>"IA Horario"</strong>.
+              </p>
+              {onNavigateTab && (
+                <button
+                  className="btn-pwa-primary"
+                  onClick={() => onNavigateTab('schedule-ai')}
+                  style={{ fontSize: '0.8rem', width: 'auto', padding: '8px 16px', margin: '0 auto' }}
+                >
+                  <Sparkles style={{ width: '16px', height: '16px' }} /> Subir mi Horario con IA
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {academicSlots.map((slot, i) => (
+                <div
+                  key={slot.id || `slot-${i}`}
+                  className="mitec-card"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderLeft: '4px solid #0033a0',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                        {slot.dayOfWeek}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>
+                        <Clock style={{ width: '12px', height: '12px', display: 'inline', marginRight: '3px' }} />
+                        {slot.startTime} - {slot.endTime} hs
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>
+                      {slot.courseName}
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '4px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                    MiTec Académico
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
