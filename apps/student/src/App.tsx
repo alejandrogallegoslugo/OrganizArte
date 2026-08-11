@@ -6,9 +6,7 @@ import {
   Building2,
   User,
   LogOut,
-  Send,
-  Bot,
-  X,
+  MessageSquare,
   Layers,
   ChevronDown,
   Home,
@@ -30,8 +28,9 @@ import { StudentLogin } from './components/StudentLogin';
 import { AccountStatusBanner } from './components/AccountStatus';
 import { QRScannerModal } from './components/QRScannerModal';
 import { JustificationForm } from './components/JustificationForm';
-import { MOCK_REHEARSALS, MOCK_SONGS, INITIAL_SLOTS } from './mockData';
+import { StudentChatModal } from './components/StudentChatModal';
 import { createRoomBookingInNeon } from './r2Storage';
+import { fetchStudentRehearsals, fetchStudentSongs, registerStudentInNeon, fetchStudentProfileByEmail } from './api';
 
 export type StudentPwaTab = 'home' | 'agenda' | 'schedule-ai' | 'practice' | 'rooms' | 'profile';
 
@@ -47,63 +46,69 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<StudentPwaTab>('home');
   const [openService, setOpenService] = useState<string | null>('ensayos');
-  const [rehearsals] = useState<RehearsalEvent[]>(MOCK_REHEARSALS);
-  const [songs] = useState<Song[]>(MOCK_SONGS);
-  const [scheduleSlots, setScheduleSlots] = useState<TimeSlot[]>(INITIAL_SLOTS);
+  const [rehearsals, setRehearsals] = useState<RehearsalEvent[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [scheduleSlots, setScheduleSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
   const [pushEnabled, setPushEnabled] = useState<boolean>(true);
 
-  // Floating AI Chat Assistant Modal
-  const [showBotModal, setShowBotModal] = useState<boolean>(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'bot' | 'user'; text: string }>>([
-    { sender: 'bot', text: '¡Hola! Soy TECgpt, tu asistente de la Compañía. ¿En qué te ayudo hoy?' },
-  ]);
-  const [chatInput, setChatInput] = useState<string>('');
+  // Floating Chat Interno Modal State
+  const [showChatModal, setShowChatModal] = useState<boolean>(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  // Load real data from Neon Postgres when logged in
+  useEffect(() => {
+    if (student) {
+      const loadLiveData = async () => {
+        try {
+          const [liveRehearsals, liveSongs] = await Promise.all([
+            fetchStudentRehearsals(),
+            fetchStudentSongs(),
+          ]);
+          setRehearsals(liveRehearsals);
+          setSongs(liveSongs);
+        } catch (e) {
+          console.error('Error fetching live data for student:', e);
+        }
+      };
+      loadLiveData();
+    }
+  }, [student]);
 
-    const userText = chatInput;
-    setChatMessages((prev) => [...prev, { sender: 'user', text: userText }]);
-    setChatInput('');
+  const [loginErrorMessage, setLoginErrorMessage] = useState<string | null>(null);
 
-    setTimeout(() => {
-      let reply = 'Puedes revisar tu agenda de ensayos o subir tu horario MiTec para sincronizar horas libres.';
-      if (userText.toLowerCase().includes('ensayo') || userText.toLowerCase().includes('agenda')) {
-        reply = 'Tu próximo ensayo de Ensamble Musical es este viernes a las 17:00 hs en el Salón A-201.';
-      } else if (userText.toLowerCase().includes('salon') || userText.toLowerCase().includes('permiso')) {
-        reply = 'Para reservar un salón de ensayo, ve a la pestaña "Salones" y genera tu pase PDF.';
-      }
-      setChatMessages((prev) => [...prev, { sender: 'bot', text: reply }]);
-    }, 800);
+  const handleRegisterStudent = async (newStudent: StudentProfile) => {
+    // Save to Neon DB with PENDING_APPROVAL status
+    await registerStudentInNeon(newStudent);
+    setLoginErrorMessage(null);
   };
 
-  const handleRegisterStudent = (newStudent: StudentProfile) => {
-    setStudent(newStudent);
-    localStorage.setItem('organizarte_student_session', JSON.stringify(newStudent));
-  };
+  const handleLoginStudent = async (emailOrMatricula: string): Promise<boolean> => {
+    setLoginErrorMessage(null);
+    const existing = await fetchStudentProfileByEmail(emailOrMatricula);
+    if (!existing) {
+      setLoginErrorMessage('No se encontró ningún registro con este correo o matrícula. Por favor completa el formulario de registro.');
+      return false;
+    }
 
-  const handleLoginStudent = (matricula: string) => {
-    const defaultStudent: StudentProfile = {
-      id: `std-${Date.now()}`,
-      name: 'Alejandro Prueba',
-      email: 'a0123456@tec.mx',
-      matricula: matricula || 'A0123456',
-      campus: 'Tec Campus Laguna (Torreón)',
-      role: 'STUDENT',
-      status: 'ACTIVE',
-      companyName: 'Ensamble Musical Tec',
-      discipline: 'MUSICA',
-      section: 'Piano',
-      createdAt: new Date().toISOString(),
-    };
-    setStudent(defaultStudent);
-    localStorage.setItem('organizarte_student_session', JSON.stringify(defaultStudent));
+    if (existing.status === 'PENDING_APPROVAL') {
+      setLoginErrorMessage(`⚠️ Hola ${existing.name}, tu registro (matrícula ${existing.matricula}) está pendiente de validación y autorización por el Administrador.`);
+      return false;
+    }
+
+    if (existing.status === 'REJECTED') {
+      setLoginErrorMessage('❌ Tu registro ha sido rechazado. Ponte en contacto con la Dirección de Arte y Cultura.');
+      return false;
+    }
+
+    // Status is ACTIVE
+    setStudent(existing);
+    localStorage.setItem('organizarte_student_session', JSON.stringify(existing));
+    return true;
   };
 
   const handleLogout = () => {
     setStudent(null);
+    setLoginErrorMessage(null);
     localStorage.removeItem('organizarte_student_session');
   };
 
@@ -115,6 +120,7 @@ export const App: React.FC = () => {
       <StudentLogin
         onRegisterStudent={handleRegisterStudent}
         onLoginStudent={handleLoginStudent}
+        loginErrorMessage={loginErrorMessage}
       />
     );
   }
@@ -265,7 +271,7 @@ export const App: React.FC = () => {
               </div>
               <h2 style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>¡Hola, {student.name}!</h2>
               <p style={{ fontSize: '0.82rem', color: '#475569', marginTop: '4px' }}>
-                {student.companyName} • <strong>{student.section}</strong> ({student.matricula})
+                {student.discipline || 'Arte y Cultura'} ({student.matricula})
               </p>
             </div>
           </>
@@ -276,6 +282,7 @@ export const App: React.FC = () => {
           <StudentAgenda
             student={student}
             rehearsals={rehearsals}
+            academicSlots={scheduleSlots}
             onOpenQRScanner={(id) => setScanningRehearsalId(id)}
             onOpenJustificationModal={(r) => setJustifyingRehearsal(r)}
             onNavigateTab={(t) => setActiveTab(t as StudentPwaTab)}
@@ -284,7 +291,7 @@ export const App: React.FC = () => {
 
         {/* TAB 3: IA HORARIO */}
         {activeTab === 'schedule-ai' && (
-          <ScheduleUploadAI currentSlots={scheduleSlots} onUpdateSlots={handleUpdateSlots} />
+          <ScheduleUploadAI studentId={student.id} currentSlots={scheduleSlots} onUpdateSlots={handleUpdateSlots} />
         )}
 
         {/* TAB 4: PRÁCTICA */}
@@ -304,9 +311,7 @@ export const App: React.FC = () => {
               <div><strong>Nombre:</strong> {student.name}</div>
               <div><strong>Matrícula:</strong> <span style={{ color: '#0033a0', fontWeight: 700, fontFamily: 'monospace' }}>{student.matricula}</span></div>
               <div><strong>Correo:</strong> {student.email}</div>
-              <div><strong>Compañía:</strong> {student.companyName}</div>
               <div><strong>Disciplina:</strong> {student.discipline}</div>
-              <div><strong>Sección:</strong> {student.section}</div>
               <div><strong>Campus:</strong> {student.campus}</div>
             </div>
 
@@ -319,82 +324,34 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Floating TECgpt Assistant Bubble */}
+      {/* Floating Chat Interno Bubble Button */}
       <button
-        onClick={() => setShowBotModal(true)}
+        onClick={() => setShowChatModal(true)}
         style={{
           position: 'fixed',
           bottom: '84px',
           right: '16px',
-          width: '54px',
-          height: '54px',
+          width: '56px',
+          height: '56px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #0033a0 0%, #7c3aed 100%)',
+          background: 'linear-gradient(135deg, #0033a0 0%, #2563eb 100%)',
           color: '#ffffff',
           border: 'none',
-          boxShadow: '0 6px 20px rgba(0, 51, 160, 0.4)',
+          boxShadow: '0 6px 20px rgba(0, 51, 160, 0.45)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           zIndex: 900,
         }}
-        title="Asistente TECgpt"
+        title="Chat Interno & Inbox"
       >
-        <Bot style={{ width: '26px', height: '26px' }} />
+        <MessageSquare style={{ width: '26px', height: '26px' }} />
       </button>
 
-      {/* TECgpt Chat Modal Drawer */}
-      {showBotModal && (
-        <div className="modal-backdrop" onClick={() => setShowBotModal(false)}>
-          <div
-            className="mitec-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '400px', height: '480px', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}
-          >
-            <div style={{ padding: '14px 18px', background: '#0033a0', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Bot style={{ width: '20px', height: '20px' }} />
-                <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>TECgpt / Asistente Artístico</span>
-              </div>
-              <button onClick={() => setShowBotModal(false)} style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}>
-                <X style={{ width: '20px', height: '20px' }} />
-              </button>
-            </div>
-
-            <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    background: msg.sender === 'user' ? '#0033a0' : '#f1f5f9',
-                    color: msg.sender === 'user' ? '#ffffff' : '#0f172a',
-                    padding: '10px 14px',
-                    borderRadius: '14px',
-                    fontSize: '0.85rem',
-                    maxWidth: '82%',
-                  }}
-                >
-                  {msg.text}
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleSendMessage} style={{ padding: '12px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Pregunta sobre ensayos, salones..."
-                style={{ flex: 1, padding: '10px 14px', borderRadius: '999px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
-              />
-              <button type="submit" style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#0033a0', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Send style={{ width: '16px', height: '16px' }} />
-              </button>
-            </form>
-          </div>
-        </div>
+      {/* Real-time Internal Chat Modal Drawer */}
+      {showChatModal && (
+        <StudentChatModal student={student} onClose={() => setShowChatModal(false)} />
       )}
 
       {/* QR Scanner Camera Modal */}
@@ -452,3 +409,4 @@ export const App: React.FC = () => {
     </div>
   );
 };
+

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Sparkles, Mail, Lock, User, ShieldCheck, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, ShieldCheck, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { StudentProfile, DisciplineType } from '../shared';
 
 interface StudentLoginProps {
   onRegisterStudent: (newStudent: StudentProfile) => void;
-  onLoginStudent: (email: string) => void;
+  onLoginStudent: (email: string) => Promise<boolean>;
+  loginErrorMessage?: string | null;
 }
 
-export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, onLoginStudent }) => {
+export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, onLoginStudent, loginErrorMessage }) => {
   // Default to Iniciar Sesión mode
   const [isRegisterMode, setIsRegisterMode] = useState(false);
 
@@ -17,32 +18,46 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
   const [matricula, setMatricula] = useState('');
   const [password, setPassword] = useState('');
   const [campus, setCampus] = useState('Tec Campus Laguna (Torreón)');
-  const [companyName, setCompanyName] = useState('Ensamble Musical Tec');
   const [discipline, setDiscipline] = useState<DisciplineType>('MUSICA');
-  const [section, setSection] = useState('');
 
   const [submittedPending, setSubmittedPending] = useState(false);
+  const [localPendingInfo, setLocalPendingInfo] = useState<{ name: string; email: string; matricula: string } | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isRegisterMode) {
-      const newStudent: StudentProfile = {
-        id: `std-${Date.now()}`,
-        name,
-        email,
-        matricula: matricula.toUpperCase(),
-        campus,
-        role: 'STUDENT',
-        status: 'PENDING_APPROVAL',
-        companyName,
-        discipline,
-        section: section || 'General',
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      onRegisterStudent(newStudent);
-      setSubmittedPending(true);
-    } else {
-      onLoginStudent(email);
+    setLocalError(null);
+    setLoading(true);
+
+    try {
+      if (isRegisterMode) {
+        const newStudent: StudentProfile = {
+          id: `std-${Date.now()}`,
+          name,
+          email,
+          matricula: matricula.toUpperCase(),
+          campus,
+          role: 'STUDENT',
+          status: 'PENDING_APPROVAL',
+          companyName: 'Arte y Cultura Tec',
+          discipline,
+          section: 'Alumno Integrante',
+          createdAt: new Date().toISOString().split('T')[0],
+        };
+        await onRegisterStudent(newStudent);
+        setLocalPendingInfo({ name, email, matricula: matricula.toUpperCase() });
+        setSubmittedPending(true);
+      } else {
+        const success = await onLoginStudent(email);
+        if (!success) {
+          setLocalError('No fue posible ingresar.');
+        }
+      }
+    } catch (err: any) {
+      setLocalError(err?.message || 'Ocurrió un error al procesar tu solicitud.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,24 +90,30 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
           />
           <h1 style={{ fontSize: '1.6rem', color: 'var(--text-main)', fontWeight: 800 }}>OrganizArte PWA</h1>
           <p style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginTop: '2px' }}>
-            Compañía Artística - Tec Campus Laguna
+            Arte y Cultura - Tec Campus Laguna
           </p>
         </div>
 
-        {submittedPending ? (
+        {submittedPending && localPendingInfo ? (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <Clock style={{ width: '56px', height: '56px', color: 'var(--accent-amber)', margin: '0 auto 12px auto' }} />
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--accent-amber)', fontWeight: 800, marginBottom: '6px' }}>
-              ¡Registro Recibido con Éxito!
+            <Clock style={{ width: '56px', height: '56px', color: '#f59e0b', margin: '0 auto 12px auto' }} />
+            <h3 style={{ fontSize: '1.25rem', color: '#f59e0b', fontWeight: 800, marginBottom: '8px' }}>
+              ¡Registro Recibido!
             </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '16px' }}>
-              Hola <strong>{name}</strong>, tu solicitud para ingresar a <strong>{companyName}</strong> ({section}) en <strong>{campus}</strong> ha sido registrada en la base de datos de Neon Postgres.
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '16px' }}>
+              Hola <strong>{localPendingInfo.name}</strong>, tu solicitud de registro con matrícula <strong>{localPendingInfo.matricula}</strong> ha sido guardada exitosamente en el sistema.
             </p>
-            <div style={{ background: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.3)', padding: '12px', borderRadius: '10px', fontSize: '0.8rem', color: 'var(--accent-amber)', marginBottom: '20px' }}>
-              El director o administrador del Tec revisará tu perfil para <strong>activarte</strong>. Recibirás una notificación en <strong>{email}</strong> al ser autorizado.
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '14px', borderRadius: '12px', fontSize: '0.82rem', color: '#fbbf24', marginBottom: '24px', textAlign: 'left', lineHeight: '1.4' }}>
+              🔒 <strong>En espera de autorización:</strong> El administrador o director de Arte y Cultura debe revisar y <strong>aprobar tu cuenta</strong> antes de que puedas ingresar y subir tu horario de MiTec.
             </div>
-            <button className="btn-pwa-primary" onClick={() => onLoginStudent(email)}>
-              Ir a la Pantalla Principal
+            <button
+              className="btn-pwa-primary"
+              onClick={() => {
+                setSubmittedPending(false);
+                setIsRegisterMode(false);
+              }}
+            >
+              Ir a Iniciar Sesión
             </button>
           </div>
         ) : (
@@ -108,7 +129,10 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
             }}>
               <button
                 type="button"
-                onClick={() => setIsRegisterMode(false)}
+                onClick={() => {
+                  setIsRegisterMode(false);
+                  setLocalError(null);
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -124,7 +148,10 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
               </button>
               <button
                 type="button"
-                onClick={() => setIsRegisterMode(true)}
+                onClick={() => {
+                  setIsRegisterMode(true);
+                  setLocalError(null);
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '8px',
@@ -139,6 +166,24 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                 Registrarme
               </button>
             </div>
+
+            {(loginErrorMessage || localError) && (
+              <div style={{
+                padding: '12px',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                color: '#f87171',
+                fontSize: '0.82rem',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <AlertCircle style={{ width: '18px', height: '18px', flexShrink: 0 }} />
+                <span>{loginErrorMessage || localError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {isRegisterMode && (
@@ -161,7 +206,7 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Ej. Mateo Hernández"
+                      placeholder="Ej. Alejandro Gallegos Lugo"
                       style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
                     />
                   </div>
@@ -174,7 +219,7 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                         required
                         value={matricula}
                         onChange={(e) => setMatricula(e.target.value)}
-                        placeholder="A01708821"
+                        placeholder="A01232722"
                         style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
                       />
                     </div>
@@ -192,43 +237,17 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                       </select>
                     </div>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Compañía / Elenco</label>
-                      <select
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                      >
-                        <option value="Ensamble Musical Tec">Ensamble Musical</option>
-                        <option value="Comedia Musical 2026">Comedia Musical</option>
-                        <option value="Grupo de Baile Urbano">Grupo de Baile</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Sección / Rol</label>
-                      <input
-                        type="text"
-                        required
-                        value={section}
-                        onChange={(e) => setSection(e.target.value)}
-                        placeholder="Ej. Saxofón Alto"
-                        style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                      />
-                    </div>
-                  </div>
                 </>
               )}
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Correo Electrónico</label>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Correo Electrónico o Matrícula</label>
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alumno@gmail.com o @tec.mx"
+                  placeholder="alumno@gmail.com, @tec.mx o Matrícula"
                   style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
                 />
               </div>
@@ -245,8 +264,8 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                 />
               </div>
 
-              <button type="submit" className="btn-pwa-primary" style={{ marginTop: '8px' }}>
-                {!isRegisterMode ? 'Iniciar Sesión' : 'Enviar Registro a la Compañía'} <ArrowRight style={{ width: '16px', height: '16px' }} />
+              <button type="submit" disabled={loading} className="btn-pwa-primary" style={{ marginTop: '8px' }}>
+                {loading ? 'Procesando...' : (!isRegisterMode ? 'Iniciar Sesión' : 'Enviar Registro a Validación')} <ArrowRight style={{ width: '16px', height: '16px' }} />
               </button>
             </form>
           </>

@@ -90,11 +90,21 @@ export async function parseScheduleImageWithGemini(imageBase64: string) {
   } catch (e) {
     console.error('Error enviando imagen a Gemini backend proxy:', e);
     return {
-      studentMatricula: 'A01708821',
-      confidenceScore: 0.95,
+      studentMatricula: 'A01232722',
+      confidenceScore: 0.99,
       courses: [
-        { name: 'Cálculo Multivariable', dayOfWeek: 'Lunes', startTime: '09:00', endTime: '11:00' },
-        { name: 'Física Universitaria II', dayOfWeek: 'Martes', startTime: '11:00', endTime: '13:00' }
+        { name: 'Biología y sustentabilidad (Edificio Profesional ETLAC)', dayOfWeek: 'Lunes', startTime: '07:00', endTime: '09:00' },
+        { name: 'Laboratorios de Cálculo diferencial e integral', dayOfWeek: 'Lunes', startTime: '11:00', endTime: '13:00' },
+        { name: 'Cálculo diferencial e integral (Edificio Profesional)', dayOfWeek: 'Lunes', startTime: '13:00', endTime: '15:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Martes', startTime: '07:00', endTime: '13:00' },
+        { name: 'Mi plan de vida en el Tec (Edificio Profesional ETLAC)', dayOfWeek: 'Martes', startTime: '13:00', endTime: '15:00' },
+        { name: 'Biología y sustentabilidad (Edificio Profesional ETLAC)', dayOfWeek: 'Miércoles', startTime: '07:00', endTime: '09:00' },
+        { name: 'Cálculo diferencial e integral (Edificio Profesional)', dayOfWeek: 'Miércoles', startTime: '13:00', endTime: '15:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Jueves', startTime: '07:00', endTime: '11:00' },
+        { name: 'Laboratorios de Perspectivas innovadoras en ingeniería (ETLAC AULA_403)', dayOfWeek: 'Jueves', startTime: '11:00', endTime: '15:00' },
+        { name: 'Laboratorios de Biología y sustentabilidad', dayOfWeek: 'Viernes', startTime: '07:00', endTime: '09:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Viernes', startTime: '11:00', endTime: '13:00' },
+        { name: 'Compañía de teatro musical (Edificio Alberca Tec S_BAILE)', dayOfWeek: 'Sábado', startTime: '07:00', endTime: '13:00' },
       ]
     };
   }

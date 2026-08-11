@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, QrCode, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { StudentProfile } from '../shared';
+import { QRCodeSVG } from './QRCodeSVG';
 
 interface MiIDDigitalCardProps {
   student: StudentProfile;
@@ -8,6 +9,8 @@ interface MiIDDigitalCardProps {
 
 export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+
+  const qrData = `ATTENDANCE:${student.matricula || student.id}:${student.name}`;
 
   return (
     <div
@@ -25,7 +28,7 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
       }}
       onClick={() => setIsFlipped(!isFlipped)}
     >
-      {/* Background Tec Decorative Waves */}
+      {/* Background Decorative Waves */}
       <div style={{
         position: 'absolute',
         top: '-40px',
@@ -46,7 +49,7 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
             <span style={{ width: '3px', height: '14px', background: '#06b6d4', borderRadius: '2px' }} />
           </div>
           <span style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            mi ID Digital Tec
+            ID Arte y Cultura
           </span>
         </div>
         <span style={{
@@ -61,7 +64,7 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
           alignItems: 'center',
           gap: '4px'
         }}>
-          <CheckCircle2 style={{ width: '12px', height: '12px' }} /> ALUMNO VIGENTE 2026
+          <CheckCircle2 style={{ width: '12px', height: '12px' }} /> ALUMNO ACTIVO
         </span>
       </div>
 
@@ -104,7 +107,7 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
               {student.matricula || 'A01234567'} • {student.campus || 'Tec Campus Laguna'}
             </div>
             <div style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '4px' }}>
-              🎭 {student.companyName} ({student.section || 'General'})
+              🎭 Arte y Cultura Tec ({student.discipline || 'Música'})
             </div>
           </div>
 
@@ -115,16 +118,15 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
           </div>
         </div>
       ) : (
-        /* Back Side: QR Code Scanning Screen */
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 0' }}>
-          <div style={{ background: '#ffffff', padding: '12px', borderRadius: '16px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', marginBottom: '8px' }}>
-            {/* Display QR pattern */}
-            <QrCode style={{ width: '90px', height: '90px', color: '#0033a0' }} />
+        /* Back Side: Real Offline Scannable QR Code Screen */
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 0' }}>
+          <div style={{ background: '#ffffff', padding: '8px', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', marginBottom: '8px' }}>
+            <QRCodeSVG value={qrData} size={110} color="#0033a0" bgColor="#ffffff" />
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8' }}>
-            Escanea en el ensayadero para pase de lista
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38bdf8', textAlign: 'center' }}>
+            Muestra este QR al profesor para tomar asistencia
           </span>
-          <span style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: '2px' }}>
+          <span style={{ fontSize: '0.68rem', opacity: 0.7, marginTop: '3px' }}>
             Toca la tarjeta para volver a la credencial
           </span>
         </div>
@@ -132,3 +134,5 @@ export const MiIDDigitalCard: React.FC<MiIDDigitalCardProps> = ({ student }) => 
     </div>
   );
 };
+
+

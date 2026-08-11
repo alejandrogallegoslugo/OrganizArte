@@ -129,7 +129,6 @@ export async function fetchStudentRehearsals(): Promise<RehearsalEvent[]> {
   }));
 }
 
-// 4. Fetch live songs for student
 export async function fetchStudentSongs(): Promise<Song[]> {
   const rows = await executeSql('SELECT * FROM songs ORDER BY created_at DESC');
   return rows.map((r: any) => ({
@@ -149,3 +148,83 @@ export async function fetchStudentSongs(): Promise<Song[]> {
     createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '2026-08-09',
   }));
 }
+// 5. Chat & Internal Messaging API Functions
+export interface InternalMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  receiverId: string;
+  receiverName: string;
+  companyName?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatContact {
+  id: string;
+  name: string;
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
+  email: string;
+  companyName?: string;
+}
+
+export async function fetchMessagesInNeon(userMatriculaOrId: string): Promise<InternalMessage[]> {
+  const query = `
+    SELECT * FROM messages 
+    WHERE receiver_id = 'ALL' 
+       OR receiver_id = '${userMatriculaOrId}'
+       OR sender_id = '${userMatriculaOrId}'
+    ORDER BY created_at ASC;
+  `;
+  const rows = await executeSql(query);
+  return rows.map((r: any) => ({
+    id: r.id,
+    senderId: r.sender_id,
+    senderName: r.sender_name,
+    senderRole: r.sender_role,
+    receiverId: r.receiver_id || 'ALL',
+    receiverName: r.receiver_name || 'Todos',
+    companyName: r.company_name,
+    content: r.content,
+    createdAt: r.created_at ? new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
+  }));
+}
+
+export async function sendMessageInNeon(msg: {
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  receiverId?: string;
+  receiverName?: string;
+  companyName?: string;
+  content: string;
+}) {
+  const query = `
+    INSERT INTO messages (sender_id, sender_name, sender_role, receiver_id, receiver_name, company_name, content)
+    VALUES ('${msg.senderId}', '${msg.senderName}', '${msg.senderRole}', '${msg.receiverId || 'ALL'}', '${msg.receiverName || 'Todos'}', '${msg.companyName || 'General'}', '${msg.content.replace(/'/g, "''")}')
+    RETURNING *;
+  `;
+  await executeSql(query);
+}
+
+export async function fetchUsersForChatInNeon(): Promise<ChatContact[]> {
+  const rows = await executeSql(`SELECT id, name, role, email, company_name FROM users ORDER BY name ASC;`);
+  const contacts: ChatContact[] = [
+    { id: 'admin-1', name: 'Prof. Alejandro Gallegos (Director/Admin)', role: 'ADMIN', email: 'admin@tec.mx', companyName: 'Dirección Arte y Cultura' },
+    { id: 'all-channel', name: '📢 Canal General Arte y Cultura', role: 'ADMIN', email: 'general@tec.mx', companyName: 'Todos los Alumnos' },
+  ];
+  if (rows && rows.length > 0) {
+    rows.forEach((r: any) => {
+      contacts.push({
+        id: r.id,
+        name: r.name,
+        role: r.role || 'STUDENT',
+        email: r.email,
+        companyName: r.company_name,
+      });
+    });
+  }
+  return contacts;
+}
+

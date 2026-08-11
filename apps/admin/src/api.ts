@@ -157,6 +157,14 @@ export async function createStudentInNeon(student: StudentProfile) {
   await executeSql(query);
 }
 
+// 1c. Delete Student directly in Neon Postgres
+export async function deleteStudentInNeon(studentId: string) {
+  // Clear associated schedules first
+  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentId}';`);
+  // Delete user from users table
+  await executeSql(`DELETE FROM users WHERE id::text = '${studentId}';`);
+}
+
 // 2. Approve Student in Neon Postgres
 export async function approveStudentInNeon(studentId: string, company: string, discipline: string, section: string) {
   const query = `
@@ -337,3 +345,35 @@ export async function createSongInNeon(s: Song) {
   `;
   await executeSql(query);
 }
+
+// 12. Fetch All Messages for Admin Chat & Inbox
+export async function fetchAllAdminMessages(): Promise<any[]> {
+  const rows = await executeSql('SELECT * FROM messages ORDER BY created_at ASC');
+  return rows.map((r: any) => ({
+    id: r.id,
+    senderId: r.sender_id,
+    senderName: r.sender_name,
+    senderRole: r.sender_role,
+    receiverId: r.receiver_id || 'ALL',
+    receiverName: r.receiver_name || 'Todos',
+    companyName: r.company_name,
+    content: r.content,
+    createdAt: r.created_at ? new Date(r.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Ahora',
+  }));
+}
+
+export async function sendAdminMessage(msg: {
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  receiverName: string;
+  content: string;
+}) {
+  const query = `
+    INSERT INTO messages (sender_id, sender_name, sender_role, receiver_id, receiver_name, company_name, content)
+    VALUES ('${msg.senderId}', '${msg.senderName}', 'ADMIN', '${msg.receiverId}', '${msg.receiverName}', 'Dirección Arte y Cultura', '${msg.content.replace(/'/g, "''")}')
+    RETURNING *;
+  `;
+  await executeSql(query);
+}
+

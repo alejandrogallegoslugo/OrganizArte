@@ -113,3 +113,18 @@ CREATE TABLE IF NOT EXISTS songs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 `;
+
+export const messagesTableSql = `
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sender_id VARCHAR(255) NOT NULL,
+  sender_name VARCHAR(255) NOT NULL,
+  sender_role VARCHAR(50) NOT NULL DEFAULT 'STUDENT',
+  receiver_id VARCHAR(255) DEFAULT 'ALL',
+  receiver_name VARCHAR(255) DEFAULT 'Todos',
+  company_name VARCHAR(255),
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+`;
+

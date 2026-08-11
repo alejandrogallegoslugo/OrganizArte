@@ -238,10 +238,51 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================
-   MOBILE RESPONSIVE OVERRIDES FOR ADMIN PWA
+   RESPONSIVE HEADER & SIDEBAR FOR ALL SCREEN SIZES
    ========================================== */
-@media (max-width: 900px) {
-  /* Dashboard layout: stack columns vertically on mobile */
+.mobile-hamburger-btn {
+  display: none !important;
+}
+
+.mobile-company-bar {
+  display: none !important;
+}
+
+.desktop-company-selector {
+  display: flex !important;
+}
+
+@media (max-width: 1024px) {
+  .mobile-hamburger-btn {
+    display: flex !important;
+  }
+
+  .desktop-company-selector {
+    display: none !important;
+  }
+
+  .mobile-company-bar {
+    display: flex !important;
+  }
+
+  /* Sidebar drawer behavior on Tablet & Mobile screen (<1024px) */
+  .sidebar-container {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: -280px !important;
+    width: 270px !important;
+    height: 100vh !important;
+    z-index: 500 !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.3) !important;
+  }
+
+  .sidebar-container.mobile-open {
+    left: 0 !important;
+  }
+
+  /* Dashboard layout: stack columns vertically on mobile/tablet */
   .dashboard-grid, .project-manager-grid {
     grid-template-columns: 1fr !important;
   }
@@ -256,41 +297,9 @@ h1, h2, h3, h4, h5, h6 {
     grid-template-columns: 1fr !important;
   }
 
-  /* TopBar Project Selector Dropdown Responsive Formatting */
-  .project-selector-topbar {
-    max-width: 130px !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    font-size: 0.75rem !important;
-    padding: 4px 8px !important;
-  }
-
-  /* Sidebar drawer behavior on mobile screen */
-  .sidebar-container {
-    position: fixed !important;
-    top: 64px;
-    bottom: 0;
-    left: -280px;
-    width: 260px !important;
-    height: calc(100vh - 64px) !important;
-    z-index: 500 !important;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.2) !important;
-  }
-
-  .sidebar-container.mobile-open {
-    left: 0 !important;
-  }
-
-  /* Hide center search bar on narrow screens to prevent overflow */
-  .topbar-search {
-    display: none !important;
-  }
-
   /* Page padding adjustment */
   main {
-    padding: 14px !important;
+    padding: 16px !important;
   }
 }
 

@@ -12,6 +12,7 @@ import {
   Palette,
   Settings,
   Users,
+  MessageSquare,
   X,
 } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export type AdminTab =
   | 'dashboard'
   | 'approvals'
   | 'availability'
+  | 'chat'
   | 'cast'
   | 'rehearsals'
   | 'rooms'
@@ -51,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Inicio', icon: <Home style={{ width: 18, height: 18 }} /> },
     { id: 'approvals', label: 'Alumnos', icon: <UserCheck style={{ width: 18, height: 18 }} />, badge: pendingApprovalsCount },
     { id: 'availability', label: 'Horarios', icon: <CalendarClock style={{ width: 18, height: 18 }} /> },
+    { id: 'chat', label: 'Chat Interno', icon: <MessageSquare style={{ width: 18, height: 18 }} /> },
     { id: 'cast', label: 'Proyectos', icon: <Users style={{ width: 18, height: 18 }} /> },
     { id: 'rehearsals', label: 'Agenda', icon: <CalendarDays style={{ width: 18, height: 18 }} /> },
     { id: 'rooms', label: 'Salones', icon: <Building2 style={{ width: 18, height: 18 }} /> },
