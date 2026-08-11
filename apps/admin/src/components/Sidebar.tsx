@@ -103,6 +103,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <div>
+          {/* Brand Logo Banner */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 4px 16px 4px', borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '3px', height: '24px', alignItems: 'center' }}>
+              <span style={{ width: '4px', height: '20px', background: '#f59e0b', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '26px', background: '#0033a0', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '20px', background: '#ec4899', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '24px', background: '#06b6d4', borderRadius: '2px' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0033a0', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                Arte y Cultura
+              </div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ec4899', letterSpacing: '0.04em' }}>
+                colaboradores
+              </div>
+            </div>
+          </div>
+
           {/* Mobile Header Close Button */}
           {mobileOpen && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>

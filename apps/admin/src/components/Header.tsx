@@ -42,8 +42,8 @@ export const Header: React.FC<HeaderProps> = ({ currentCompany, setCurrentCompan
         padding: '0 16px',
         gap: '12px',
       }}>
-        {/* Left Section: Hamburger Menu Toggle Button & Campus Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Left Section: Hamburger Menu Toggle Button & Brand Logo & Campus Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {/* Hamburger Menu Toggle for Tablets & Mobile */}
           <button
             onClick={onToggleMobileMenu}
@@ -64,6 +64,24 @@ export const Header: React.FC<HeaderProps> = ({ currentCompany, setCurrentCompan
           >
             <Menu style={{ width: '22px', height: '22px' }} />
           </button>
+
+          {/* Official Arte y Cultura Brand Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
+            <div style={{ display: 'flex', gap: '2px', height: '20px', alignItems: 'center' }}>
+              <span style={{ width: '4px', height: '18px', background: '#f59e0b', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '22px', background: '#0033a0', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '16px', background: '#ec4899', borderRadius: '2px' }} />
+              <span style={{ width: '4px', height: '20px', background: '#06b6d4', borderRadius: '2px' }} />
+            </div>
+            <div>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em', display: 'block', lineHeight: 1.1 }}>
+                Arte y Cultura
+              </span>
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ec4899', display: 'block', marginTop: '-2px' }}>
+                colaboradores
+              </span>
+            </div>
+          </div>
 
           {/* Campus Selector - Tec Campus Laguna Exclusivo */}
           <div style={{
