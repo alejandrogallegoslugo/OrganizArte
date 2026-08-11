@@ -1,17 +1,13 @@
-// Live Neon Postgres API Integration for Student PWA (Direct Serverless HTTP SQL + Local Proxy)
+// Live Neon Postgres API Integration for Student PWA (Cloudflare Pages Function + Local Proxy)
 import { StudentProfile, RoomBooking, RehearsalEvent, Song } from './shared';
 
-const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_WVklraewq69t@ep-restless-forest-axusb0wu-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require';
-const NEON_HTTP_ENDPOINT = 'https://ep-restless-forest-axusb0wu-pooler.c-4.us-east-2.aws.neon.tech/sql';
-
 async function executeSql(query: string, params: any[] = []) {
+  // 1. Primary: Relative Cloudflare Pages Function /api/db (Zero CORS, Same-Origin, Cloudflare Edge)
   try {
-    // 1. Primary: Direct Neon Serverless HTTP API (Works 100% in Cloudflare Pages & Mobile Browsers)
-    const response = await fetch(NEON_HTTP_ENDPOINT, {
+    const response = await fetch('/api/db', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Neon-Connection-String': NEON_CONNECTION_STRING,
       },
       body: JSON.stringify({ query, params }),
     });
@@ -20,13 +16,11 @@ async function executeSql(query: string, params: any[] = []) {
       const data = await response.json();
       return data.rows || [];
     }
-
-    console.warn('Neon HTTP Endpoint returned status:', response.status, await response.text());
   } catch (error) {
-    console.warn('Neon Direct HTTP Error, trying fallback proxy:', error);
+    console.warn('Cloudflare /api/db Endpoint Warning, trying local proxy:', error);
   }
 
-  // 2. Secondary Fallback: Local Express Proxy Server if running on localhost
+  // 2. Secondary Fallback: Local Express Proxy Server on http://localhost:4000/api/db
   try {
     const fallbackResponse = await fetch('http://localhost:4000/api/db', {
       method: 'POST',
