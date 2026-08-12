@@ -260,6 +260,15 @@ export async function saveStudentScheduleCourseInNeon(
   await executeSql(query);
 }
 
+export async function clearStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (realUserId) {
+    await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
+  } else if (studentIdOrEmailOrMatricula) {
+    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentIdOrEmailOrMatricula}';`);
+  }
+}
+
 export async function deleteStudentScheduleCourseInNeon(scheduleId: string) {
   const query = `DELETE FROM student_schedules WHERE id = '${scheduleId}';`;
   await executeSql(query);

@@ -8,6 +8,7 @@ interface AvailabilityHeatmapProps {
   onUploadStudentSchedule?: (studentId: string, courses: any[]) => void;
   onSaveScheduleCourse?: (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName?: string, validUntil?: string) => void;
   onDeleteScheduleCourse?: (scheduleId: string) => void;
+  onClearStudentSchedules?: (studentId: string) => void;
 }
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -23,6 +24,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   onUploadStudentSchedule,
   onSaveScheduleCourse,
   onDeleteScheduleCourse,
+  onClearStudentSchedules,
 }) => {
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
   
@@ -439,9 +441,23 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Matrícula: {selectedStudentObj.matricula} | Correo: {selectedStudentObj.email}</p>
               </div>
 
-              <button className="btn-primary" onClick={handleOpenAddCourse} style={{ fontSize: '0.8rem', padding: '8px 14px' }}>
-                <Plus style={{ width: '14px', height: '14px' }} /> + Agregar Bloqueo / Materia Masiva
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    if (selectedStudentObj && confirm(`¿Vaciar todo el horario de ${selectedStudentObj.name} para reingresarlo limpio?`)) {
+                      if (onClearStudentSchedules) onClearStudentSchedules(selectedStudentObj.id);
+                    }
+                  }}
+                  style={{ fontSize: '0.8rem', padding: '8px 12px', color: '#f43f5e', border: '1px solid rgba(244, 63, 94, 0.3)' }}
+                >
+                  <Trash2 style={{ width: '14px', height: '14px' }} /> Vaciar Horario
+                </button>
+
+                <button className="btn-primary" onClick={handleOpenAddCourse} style={{ fontSize: '0.8rem', padding: '8px 14px' }}>
+                  <Plus style={{ width: '14px', height: '14px' }} /> + Agregar Bloqueo / Materia Masiva
+                </button>
+              </div>
             </div>
           )}
 

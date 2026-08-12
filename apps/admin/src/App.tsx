@@ -14,24 +14,21 @@ import { CampusManager } from './components/CampusManager';
 import { CastManager } from './components/CastManager';
 import { ChatInternoManager } from './components/ChatInternoManager';
 import { Login } from './components/Login';
-
-import { StudentProfile, RehearsalEvent, RoomBooking, Song, DisciplineType, RehearsalRoom, StudentSchedule, sendActivationEmail } from './shared';
 import {
-  fetchLiveCompanies,
-  createCompanyInNeon,
-  updateCompanyInNeon,
-  deleteCompanyInNeon,
-  fetchLiveCastRoles,
-  createCastRoleInNeon,
-  deleteCastRoleInNeon,
+  StudentProfile,
+  RehearsalEvent,
+  RoomBooking,
+  Song,
+  StudentSchedule,
+} from './shared';
+import {
   fetchLiveStudents,
-  createStudentInNeon,
-  deleteStudentInNeon,
   approveStudentInNeon,
   rejectStudentInNeon,
   fetchLiveSchedules,
   saveStudentScheduleCourseInNeon,
   deleteStudentScheduleCourseInNeon,
+  clearStudentSchedulesInNeon,
   fetchLiveRooms,
   createRoomInNeon,
   updateRoomInNeon,
@@ -43,65 +40,72 @@ import {
   createRehearsalInNeon,
   fetchLiveSongs,
   createSongInNeon,
+  deleteStudentInNeon,
+  createStudentInNeon,
+  fetchLiveCompanies,
+  createCompanyInNeon,
+  updateCompanyInNeon,
+  deleteCompanyInNeon,
+  fetchLiveCastRoles,
+  createCastRoleInNeon,
+  deleteCastRoleInNeon,
 } from './api';
 
 export const App: React.FC = () => {
-  // Mobile drawer state
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Auth Session State - Restored from localStorage so refresh stays logged in
   const [adminUser, setAdminUser] = useState<{ name: string; email: string; role: string } | null>(() => {
     try {
       const saved = localStorage.getItem('organizarte_admin_session');
-      return saved ? JSON.parse(saved) : null;
+      return saved ? JSON.parse(saved) : { name: 'Prof. Alejandro Gallegos', email: 'admin@tec.mx', role: 'ADMIN' };
     } catch {
       return null;
     }
   });
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
-  const [currentCompany, setCurrentCompany] = useState<string>('Ensamble Musical Tec');
+  const [currentCompany, setCurrentCompany] = useState('Ensamble Musical Tec');
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
-  // Master Live Database State
-  const [companies, setCompanies] = useState<{ id: string; name: string; discipline: string; emoji: string }[]>([]);
-  const [casts, setCasts] = useState<any[]>([]);
+  // Live Database States
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [schedules, setSchedules] = useState<StudentSchedule[]>([]);
-  const [rooms, setRooms] = useState<RehearsalRoom[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [bookings, setBookings] = useState<RoomBooking[]>([]);
   const [rehearsals, setRehearsals] = useState<RehearsalEvent[]>([]);
   const [songs, setSongs] = useState<Song[]>([]);
-  const [campuses, setCampuses] = useState([
-    { id: 'b583927a-eb2e-4a3b-8372-5bd09d6f44f3', name: 'Tec Campus Laguna (Torreón)', city: 'Torreón', state: 'Coahuila', isActive: true },
-  ]);
+  const [companies, setCompanies] = useState<{ id: string; name: string; discipline: string; emoji: string }[]>([]);
+  const [castShows, setCastShows] = useState<any[]>([]);
+  const [loadingDb, setLoadingDb] = useState<boolean>(false);
 
-  const [loadingDb, setLoadingDb] = useState(true);
-
-  // Load real data from Neon Postgres
+  // Load Real Data from Neon DB
   const loadNeonData = async () => {
     setLoadingDb(true);
     try {
-      const [liveCompanies, liveCastRoles, liveStudents, liveSchedules, liveRooms, liveBookings, liveRehearsals, liveSongs] = await Promise.all([
-        fetchLiveCompanies(),
-        fetchLiveCastRoles(currentCompany),
+      const [stData, schData, rmData, bkData, rhData, sgData, cpData, crData] = await Promise.all([
         fetchLiveStudents(),
         fetchLiveSchedules(),
         fetchLiveRooms(),
         fetchLiveBookings(),
         fetchLiveRehearsals(),
         fetchLiveSongs(),
+        fetchLiveCompanies(),
+        fetchLiveCastRoles(),
       ]);
 
-      setCompanies(liveCompanies);
-      setCasts(liveCastRoles);
-      setStudents(liveStudents);
-      setSchedules(liveSchedules);
-      setRooms(liveRooms);
-      setBookings(liveBookings);
-      setRehearsals(liveRehearsals);
-      setSongs(liveSongs);
-    } catch (e) {
-      console.error('Error loading Neon data:', e);
+      setStudents(stData);
+      setSchedules(schData);
+      setRooms(rmData);
+      setBookings(bkData);
+      setRehearsals(rhData);
+      setSongs(sgData);
+
+      if (cpData && cpData.length > 0) {
+        setCompanies(cpData);
+      }
+      if (crData && crData.length > 0) {
+        setCastShows(crData);
+      }
+    } catch (err) {
+      console.error('Error fetching Neon database:', err);
     } finally {
       setLoadingDb(false);
     }
@@ -113,7 +117,7 @@ export const App: React.FC = () => {
     }
   }, [adminUser]);
 
-  const handleLoginSuccess = (user: { name: string; email: string; role: string }) => {
+  const handleLogin = (user: { name: string; email: string; role: string }) => {
     setAdminUser(user);
     localStorage.setItem('organizarte_admin_session', JSON.stringify(user));
   };
@@ -123,60 +127,37 @@ export const App: React.FC = () => {
     localStorage.removeItem('organizarte_admin_session');
   };
 
-  // If not logged in, show Protected Login view
   if (!adminUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login onLogin={handleLogin} />;
   }
+
+  const sendActivationEmail = (studentName: string, studentEmail: string, company: string, discipline: string) => {
+    const subject = encodeURIComponent(`🎉 Tu cuenta en OrganizArte Tec ha sido Activada — ${company}`);
+    const body = encodeURIComponent(
+      `Hola ${studentName},\n\n` +
+      `¡Buenas noticias! Tu registro en la plataforma OrganizArte de la Dirección de Arte y Cultura ha sido APROBADO Y ACTIVADO por el Profesor Alejandro Gallegos.\n\n` +
+      `📌 Compañía / Elenco: ${company}\n` +
+      `🎭 Disciplina: ${discipline}\n` +
+      `🌐 Portal Alumnos PWA: https://organizarte-app.pages.dev\n\n` +
+      `Ya puedes iniciar sesión con tu correo (${studentEmail}) o matrícula para consultar tus convocatorias a ensayos, partituras y pases de salones DAE.\n\n` +
+      `Atentamente,\n` +
+      `Dirección de Arte y Cultura\n` +
+      `Tec de Monterrey`
+    );
+    window.open(`mailto:${studentEmail}?subject=${subject}&body=${body}`, '_blank');
+  };
 
   const pendingApprovalsCount = students.filter((s) => s.status === 'PENDING_APPROVAL').length;
 
-  // Handlers tied to Neon DB with immediate re-sync
-  const handleAddCompany = async (name: string, discipline: string, emoji: string) => {
-    const newCompany = { id: `comp-${Date.now()}`, name, discipline, emoji };
-    setCompanies((prev) => [...prev, newCompany]);
-    await createCompanyInNeon(name, discipline, emoji);
-    await loadNeonData();
-  };
-
-  const handleUpdateCompany = async (id: string, name: string, discipline: string, emoji: string) => {
-    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, name, discipline, emoji } : c)));
-    await updateCompanyInNeon(id, name, discipline, emoji);
-    await loadNeonData();
-  };
-
-  const handleDeleteCompany = async (id: string) => {
-    setCompanies((prev) => prev.filter((c) => c.id !== id));
-    await deleteCompanyInNeon(id);
-    await loadNeonData();
-  };
-
-  const handleAddCastRole = async (showTitle: string, companyName: string, characterName: string, roleCategory: string, requiredDiscipline: string, studentName: string, assignmentType: string) => {
-    await createCastRoleInNeon(showTitle, companyName, characterName, roleCategory, requiredDiscipline);
-    await loadNeonData();
-  };
-
-  const handleDeleteCastRole = async (roleId: string) => {
-    await deleteCastRoleInNeon(roleId);
-    await loadNeonData();
-  };
-
-  const handleAddDirectStudent = async (newStudent: StudentProfile, parsedCourses: any[], validityPeriod: string, validUntil: string) => {
-    setStudents((prev) => [newStudent, ...prev]);
-    await createStudentInNeon(newStudent);
-    if (parsedCourses && parsedCourses.length > 0) {
-      for (const c of parsedCourses) {
-        await saveStudentScheduleCourseInNeon(newStudent.id, c.dayOfWeek || 'Lunes', c.startTime || '09:00', c.endTime || '11:00', c.name || 'Materia', validityPeriod, validUntil);
-      }
-    }
-    await loadNeonData();
-  };
-
-  const handleApproveStudent = async (studentId: string, company: string, discipline: DisciplineType, section: string) => {
+  const handleApproveStudent = async (studentId: string, company: string, discipline: string, section: string) => {
     setStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, status: 'ACTIVE', companyName: company, discipline, section } : s))
+      prev.map((s) =>
+        s.id === studentId ? { ...s, status: 'ACTIVE', companyName: company, discipline, section } : s
+      )
     );
     await approveStudentInNeon(studentId, company, discipline, section);
     await loadNeonData();
+
     const s = students.find((x) => x.id === studentId);
     if (s) sendActivationEmail(s.name, s.email, company, discipline);
   };
@@ -193,13 +174,24 @@ export const App: React.FC = () => {
     await loadNeonData();
   };
 
-  const handleSaveScheduleCourse = async (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string) => {
-    await saveStudentScheduleCourseInNeon(studentId, dayOfWeek, startTime, endTime, courseName);
+  const handleAddDirectStudent = async (newStudent: StudentProfile) => {
+    setStudents((prev) => [newStudent, ...prev]);
+    await createStudentInNeon(newStudent);
+    await loadNeonData();
+  };
+
+  const handleSaveScheduleCourse = async (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName?: string, validUntil?: string) => {
+    await saveStudentScheduleCourseInNeon(studentId, dayOfWeek, startTime, endTime, courseName, periodName, validUntil);
     await loadNeonData();
   };
 
   const handleDeleteScheduleCourse = async (scheduleId: string) => {
     await deleteStudentScheduleCourseInNeon(scheduleId);
+    await loadNeonData();
+  };
+
+  const handleClearStudentSchedules = async (studentId: string) => {
+    await clearStudentSchedulesInNeon(studentId);
     await loadNeonData();
   };
 
@@ -218,16 +210,8 @@ export const App: React.FC = () => {
     await loadNeonData();
   };
 
-  const handleAddRehearsal = async (newRehearsal: RehearsalEvent) => {
-    setRehearsals((prev) => [newRehearsal, ...prev]);
-    await createRehearsalInNeon(newRehearsal);
-    await loadNeonData();
-  };
-
   const handleApproveBooking = async (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'APPROVED' } : b))
-    );
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'APPROVED' } : b)));
     await approveBookingInNeon(bookingId);
     await loadNeonData();
   };
@@ -238,11 +222,47 @@ export const App: React.FC = () => {
     await loadNeonData();
   };
 
-  const handleAddSong = async (newSong: Song) => {
-    setSongs((prev) => [newSong, ...prev]);
-    await createSongInNeon(newSong);
+  const handleCreateRehearsal = async (r: RehearsalEvent) => {
+    setRehearsals((prev) => [r, ...prev]);
+    await createRehearsalInNeon(r);
     await loadNeonData();
   };
+
+  const handleCreateSong = async (s: Song) => {
+    setSongs((prev) => [s, ...prev]);
+    await createSongInNeon(s);
+    await loadNeonData();
+  };
+
+  const handleAddCompany = async (name: string, discipline: string, emoji: string) => {
+    await createCompanyInNeon(name, discipline, emoji);
+    await loadNeonData();
+  };
+
+  const handleEditCompany = async (id: string, name: string, discipline: string, emoji: string) => {
+    await updateCompanyInNeon(id, name, discipline, emoji);
+    await loadNeonData();
+  };
+
+  const handleDeleteCompany = async (id: string) => {
+    await deleteCompanyInNeon(id);
+    await loadNeonData();
+  };
+
+  const handleAddCastRole = async (showTitle: string, companyName: string, characterName: string, roleCategory: string, requiredDiscipline: string) => {
+    await createCastRoleInNeon(showTitle, companyName, characterName, roleCategory, requiredDiscipline);
+    await loadNeonData();
+  };
+
+  const handleDeleteCastRole = async (roleId: string) => {
+    await deleteCastRoleInNeon(roleId);
+    await loadNeonData();
+  };
+
+  const [campuses, setCampuses] = useState([
+    { id: '1', name: 'Tec Campus Laguna (Torreón)', city: 'Torreón', state: 'Coahuila', isActive: true },
+    { id: '2', name: 'Tec Campus Monterrey', city: 'Monterrey', state: 'Nuevo León', isActive: false },
+  ]);
 
   const handleAddCampus = (name: string, city: string, state: string) => {
     const newCampus = {
@@ -310,6 +330,7 @@ export const App: React.FC = () => {
               schedules={schedules}
               onSaveScheduleCourse={handleSaveScheduleCourse}
               onDeleteScheduleCourse={handleDeleteScheduleCourse}
+              onClearStudentSchedules={handleClearStudentSchedules}
             />
           )}
 
@@ -319,19 +340,16 @@ export const App: React.FC = () => {
 
           {activeTab === 'cast' && (
             <CastManager
-              currentCompany={currentCompany}
-              students={students}
-              casts={casts}
-              onAddCastRole={handleAddCastRole}
-              onDeleteCastRole={handleDeleteCastRole}
+              shows={castShows}
+              onAddRole={handleAddCastRole}
+              onDeleteRole={handleDeleteCastRole}
             />
           )}
 
           {activeTab === 'rehearsals' && (
             <RehearsalScheduler
               rehearsals={rehearsals}
-              companyName={currentCompany}
-              onAddRehearsal={handleAddRehearsal}
+              onCreateRehearsal={handleCreateRehearsal}
             />
           )}
 
@@ -350,23 +368,23 @@ export const App: React.FC = () => {
           {activeTab === 'songs' && (
             <SongLibrary
               songs={songs}
-              companyName={currentCompany}
-              onAddSong={handleAddSong}
+              onCreateSong={handleCreateSong}
             />
           )}
 
           {activeTab === 'attendance' && (
-            <AttendanceQR rehearsals={rehearsals} students={students} />
+            <AttendanceQR rehearsals={rehearsals} />
           )}
 
-          {activeTab === 'justifications' && <JustificationsManager />}
+          {activeTab === 'justifications' && (
+            <JustificationsManager />
+          )}
 
           {activeTab === 'companies' && (
             <CompanyManager
-              currentCampus="Tec Campus Laguna (Torreón)"
               companies={companies}
               onAddCompany={handleAddCompany}
-              onUpdateCompany={handleUpdateCompany}
+              onEditCompany={handleEditCompany}
               onDeleteCompany={handleDeleteCompany}
             />
           )}
