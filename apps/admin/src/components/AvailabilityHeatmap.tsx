@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter } from 'lucide-react';
+import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
 interface AvailabilityHeatmapProps {
   students: StudentProfile[];
   schedules: StudentSchedule[];
   onUploadStudentSchedule?: (studentId: string, courses: any[]) => void;
-  onSaveScheduleCourse?: (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string) => void;
+  onSaveScheduleCourse?: (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName?: string, validUntil?: string) => void;
   onDeleteScheduleCourse?: (scheduleId: string) => void;
 }
 
@@ -43,65 +43,24 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState<any | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Add / Edit Manual Course Modal State
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<StudentSchedule | null>(null);
   const [courseName, setCourseName] = useState('');
-  const [courseDay, setCourseDay] = useState('Lunes');
+  const [selectedDays, setSelectedDays] = useState<string[]>(['Lunes']);
   const [courseStartTime, setCourseStartTime] = useState('09:00');
   const [courseEndTime, setCourseEndTime] = useState('11:00');
-
-  const processSelectedFile = async (file: File) => {
-    setOcrLoading(true);
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const realBase64 = reader.result as string;
-      try {
-        console.log('⚡ Procesando imagen real con IA proxy...');
-        const parsed = await parseScheduleImageWithGemini(realBase64);
-        console.log('✅ Gemini OCR Respuesta:', parsed);
-        setOcrResult(parsed);
-
-        // Save detected courses to database
-        if (parsed.courses && parsed.courses.length > 0) {
-          if (onUploadStudentSchedule) {
-            onUploadStudentSchedule(selectedStudentId, parsed.courses);
-          } else if (onSaveScheduleCourse) {
-            for (const c of parsed.courses) {
-              await onSaveScheduleCourse(selectedStudentId, c.dayOfWeek || 'Lunes', c.startTime || '09:00', c.endTime || '11:00', c.name || 'Materia');
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Error procesando imagen en Gemini:', e);
-      } finally {
-        setOcrLoading(false);
-        setShowUploadModal(false);
-      }
-    };
-
-    reader.onerror = () => {
-      setOcrLoading(false);
-      setShowUploadModal(false);
-    };
-
-    reader.readAsDataURL(file);
-  };
+  const [periodName, setPeriodName] = useState('Semestre Agosto - Diciembre 2026');
+  const [validUntil, setValidUntil] = useState('2026-12-15');
 
   // Selected Student Object (Strict match)
   const selectedStudentObj = activeStudents.find((s) => s.id === selectedStudentId) || activeStudents[0];
 
-  // Strictly filter schedules for selected student only
+  // Strictly filter schedules for selected student only by permanent DB UUID
   const currentStudentSchedules = schedules.filter((sch) => {
     if (!selectedStudentObj) return false;
-    return (
-      sch.studentId === selectedStudentObj.id ||
-      sch.studentId === selectedStudentObj.matricula ||
-      sch.studentId === selectedStudentObj.email
-    );
+    return sch.studentId === selectedStudentObj.id;
   });
 
   const handleApproveScheduleValidation = () => {
@@ -112,19 +71,37 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   const handleOpenAddCourse = () => {
     setEditingCourse(null);
     setCourseName('');
-    setCourseDay('Lunes');
+    setSelectedDays(['Lunes']);
     setCourseStartTime('09:00');
     setCourseEndTime('11:00');
+    setPeriodName('Semestre Agosto - Diciembre 2026');
+    setValidUntil('2026-12-15');
     setShowCourseModal(true);
   };
 
   const handleOpenEditCourse = (course: StudentSchedule) => {
     setEditingCourse(course);
     setCourseName(course.courseName);
-    setCourseDay(course.dayOfWeek);
+    setSelectedDays([course.dayOfWeek]);
     setCourseStartTime(course.startTime);
     setCourseEndTime(course.endTime);
+    setPeriodName(course.periodName || 'Semestre Agosto - Diciembre 2026');
+    setValidUntil(course.validUntil || '2026-12-15');
     setShowCourseModal(true);
+  };
+
+  const toggleDay = (day: string) => {
+    if (selectedDays.includes(day)) {
+      if (selectedDays.length > 1) {
+        setSelectedDays(selectedDays.filter((d) => d !== day));
+      }
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  };
+
+  const selectAllWeekdays = () => {
+    setSelectedDays(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
   };
 
   const handleSaveCourse = async (e: React.FormEvent) => {
@@ -132,7 +109,10 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     if (!courseName || !selectedStudentObj) return;
 
     if (onSaveScheduleCourse) {
-      await onSaveScheduleCourse(selectedStudentObj.id, courseDay, courseStartTime, courseEndTime, courseName);
+      // Loop over all selected days for bulk creation
+      for (const day of selectedDays) {
+        await onSaveScheduleCourse(selectedStudentObj.id, day, courseStartTime, courseEndTime, courseName, periodName, validUntil);
+      }
     }
 
     setShowCourseModal(false);
@@ -156,7 +136,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     const busyStudentIds = new Set(
       schedules.filter((s) => {
         const matchingStudent = filteredHeatmapStudents.find(
-          (st) => st.id === s.studentId || st.matricula === s.studentId || st.email === s.studentId
+          (st) => st.id === s.studentId
         );
         if (!matchingStudent) return false;
 
@@ -460,7 +440,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               </div>
 
               <button className="btn-primary" onClick={handleOpenAddCourse} style={{ fontSize: '0.8rem', padding: '8px 14px' }}>
-                <Plus style={{ width: '14px', height: '14px' }} /> Agregar Clase Manual
+                <Plus style={{ width: '14px', height: '14px' }} /> + Agregar Bloqueo / Materia Masiva
               </button>
             </div>
           )}
@@ -471,17 +451,17 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               <Clock style={{ width: '40px', height: '40px', color: 'var(--accent-amber)', margin: '0 auto 8px auto', display: 'block' }} />
               <p>Este alumno no tiene materias registradas actualmente.</p>
               <button className="btn-secondary" onClick={handleOpenAddCourse} style={{ marginTop: '12px' }}>
-                + Agregar Primera Materia
+                + Agregar Primera Materia o Bloqueo
               </button>
             </div>
           ) : (
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Nombre de la Materia</th>
+                  <th>Nombre de la Materia / Bloqueo</th>
                   <th>Día de la Semana</th>
                   <th>Horario (Inicio - Fin)</th>
-                  <th>Vigencia</th>
+                  <th>Vigencia / Fecha Límite</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -496,7 +476,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                       🕒 {course.startTime.substring(0, 5)} - {course.endTime.substring(0, 5)} hs
                     </td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {course.periodName || 'Semestre Ago-Dic 2026'}
+                      📅 Válido hasta: {course.validUntil || '2026-12-15'}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -524,44 +504,76 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* Manual Course Add/Edit Modal */}
+      {/* Manual Bulk Multi-day & Single Course Add/Edit Modal */}
       {showCourseModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', maxWidth: '420px', width: '100%', border: '1px solid #cbd5e1' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', border: '1px solid #cbd5e1' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
-              {editingCourse ? 'Editar Materia Académica' : 'Agregar Materia Manual'}
+              {editingCourse ? 'Editar Clase / Bloqueo' : '⚡ Cargar Bloqueo o Materias Masivas'}
             </h3>
 
             <form onSubmit={handleSaveCourse} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                  Nombre de la Materia
+                  Nombre de la Materia o Motivo del Bloqueo
                 </label>
                 <input
                   type="text"
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
-                  placeholder="Ej. Cálculo Diferencial (Edificio Profesional)"
+                  placeholder="Ej. Trabajo, Entrenamiento, Cálculo Diferencial"
                   required
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
                 />
               </div>
 
+              {/* Multi-day Selection */}
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                  Día de la Semana
-                </label>
-                <select
-                  value={courseDay}
-                  onChange={(e) => setCourseDay(e.target.value)}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
-                >
-                  {DAYS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                    Días de la Semana (Selección Múltiple Masiva)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={selectAllWeekdays}
+                    style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
+                  >
+                    ⚡ Lunes a Viernes
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  {DAYS.map((d) => {
+                    const isSelected = selectedDays.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleDay(d)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #0033a0' : '1px solid #cbd5e1',
+                          background: isSelected ? '#e0f2fe' : '#f8fafc',
+                          color: isSelected ? '#0033a0' : '#475569',
+                          fontWeight: isSelected ? 800 : 500,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {isSelected ? <CheckSquare style={{ width: 14, height: 14 }} /> : <Square style={{ width: 14, height: 14 }} />}
+                        <span>{d}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* Time Slots */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
@@ -587,9 +599,35 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                 </div>
               </div>
 
+              {/* Period & Expiration Deadline */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    Periodo Escolar
+                  </label>
+                  <input
+                    type="text"
+                    value={periodName}
+                    onChange={(e) => setPeriodName(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    Fecha Límite / Vigencia
+                  </label>
+                  <input
+                    type="date"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  Guardar Clase
+                  ⚡ Guardar en ({selectedDays.length}) Días
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => setShowCourseModal(false)}>
                   Cancelar
