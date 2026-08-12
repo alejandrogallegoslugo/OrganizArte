@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square } from 'lucide-react';
+import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square, RefreshCw } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
 interface AvailabilityHeatmapProps {
@@ -184,7 +184,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             <CalendarClock style={{ width: '24px', height: '24px' }} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.3rem', color: '#0f172a', fontWeight: 800 }}>Horarios</h2>
+            <h2 style={{ fontSize: '1.3rem', color: '#0f172a', fontWeight: 800 }}>Horarios & Matriz de Disponibilidad</h2>
           </div>
         </div>
 
@@ -244,7 +244,6 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
           style={{
             padding: '8px 16px',
             borderRadius: '8px',
-            border: 'none',
             fontSize: '0.82rem',
             fontWeight: 800,
             cursor: 'pointer',
@@ -262,7 +261,6 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
           style={{
             padding: '8px 16px',
             borderRadius: '8px',
-            border: 'none',
             fontSize: '0.82rem',
             fontWeight: 800,
             cursor: 'pointer',
@@ -409,7 +407,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               <BookOpen style={{ color: 'var(--primary)' }} />
               <div>
                 <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 800 }}>Inspector de Clases por Alumno</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Revisa y modifica las materias individuales cargadas por cada alumno.</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Revisa, resetea y modifica las materias individuales cargadas por cada alumno.</p>
               </div>
             </div>
 
@@ -434,11 +432,18 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
           {selectedStudentObj && (
             <div style={{ background: 'rgba(2, 132, 199, 0.05)', border: '1px solid rgba(2, 132, 199, 0.2)', padding: '16px 20px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>
-                  {selectedStudentObj.companyName} | {selectedStudentObj.discipline}
-                </span>
-                <h4 style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1.1rem' }}>{selectedStudentObj.name}</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Matrícula: {selectedStudentObj.matricula} | Correo: {selectedStudentObj.email}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {selectedStudentObj.companyName} | {selectedStudentObj.discipline}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                    🟢 HABILITADO
+                  </span>
+                </div>
+                <h4 style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1.1rem', marginTop: '2px' }}>{selectedStudentObj.name}</h4>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Matrícula: <strong>{selectedStudentObj.matricula}</strong> | Correo: <strong>{selectedStudentObj.email}</strong> | UUID BD: <code style={{ fontSize: '0.72rem', background: '#e2e8f0', padding: '2px 4px', borderRadius: '4px' }}>{selectedStudentObj.id}</code>
+                </p>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -449,9 +454,9 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                       if (onClearStudentSchedules) onClearStudentSchedules(selectedStudentObj.id);
                     }
                   }}
-                  style={{ fontSize: '0.8rem', padding: '8px 12px', color: '#f43f5e', border: '1px solid rgba(244, 63, 94, 0.3)' }}
+                  style={{ fontSize: '0.8rem', padding: '8px 12px', color: '#f43f5e', border: '1px solid rgba(244, 63, 94, 0.3)', background: '#fff1f2' }}
                 >
-                  <Trash2 style={{ width: '14px', height: '14px' }} /> Vaciar Horario
+                  <Trash2 style={{ width: '14px', height: '14px' }} /> Vaciar / Resetear Horario
                 </button>
 
                 <button className="btn-primary" onClick={handleOpenAddCourse} style={{ fontSize: '0.8rem', padding: '8px 14px' }}>
@@ -463,9 +468,12 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
           {/* Table of Student Courses */}
           {currentStudentSchedules.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
               <Clock style={{ width: '40px', height: '40px', color: 'var(--accent-amber)', margin: '0 auto 8px auto', display: 'block' }} />
-              <p>Este alumno no tiene materias registradas actualmente.</p>
+              <p style={{ fontWeight: 700, color: '#475569' }}>Este alumno no tiene materias registradas actualmente.</p>
+              <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                El horario está vacío o fue reseteado. Puedes agregar un bloqueo manual o esperar a que el alumno escanee su horario en su PWA.
+              </p>
               <button className="btn-secondary" onClick={handleOpenAddCourse} style={{ marginTop: '12px' }}>
                 + Agregar Primera Materia o Bloqueo
               </button>
@@ -477,7 +485,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                   <th>Nombre de la Materia / Bloqueo</th>
                   <th>Día de la Semana</th>
                   <th>Horario (Inicio - Fin)</th>
-                  <th>Vigencia / Fecha Límite</th>
+                  <th>Vigencia & Expiración</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -491,8 +499,15 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                     <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
                       🕒 {course.startTime.substring(0, 5)} - {course.endTime.substring(0, 5)} hs
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      📅 Válido hasta: {course.validUntil || '2026-12-15'}
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                          🟢 VIGENTE
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          Vence: <strong>{course.validUntil || '2026-12-15'}</strong>
+                        </span>
+                      </div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
