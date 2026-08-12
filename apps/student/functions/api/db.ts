@@ -3,8 +3,15 @@ export async function onRequestPost(context: any) {
     const body = await context.request.json();
     const { query, params } = body;
 
-    const NEON_CONNECTION_STRING = context.env.DATABASE_URL || 'postgresql://neondb_owner:npg_WVklraewq69t@ep-restless-forest-axusb0wu-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require';
+    const NEON_CONNECTION_STRING = context.env.DATABASE_URL || process.env.DATABASE_URL;
     const NEON_HTTP_ENDPOINT = 'https://ep-restless-forest-axusb0wu-pooler.c-4.us-east-2.aws.neon.tech/sql';
+
+    if (!NEON_CONNECTION_STRING) {
+      return new Response(JSON.stringify({ error: 'DATABASE_URL environment variable is missing', rows: [] }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const neonResponse = await fetch(NEON_HTTP_ENDPOINT, {
       method: 'POST',
