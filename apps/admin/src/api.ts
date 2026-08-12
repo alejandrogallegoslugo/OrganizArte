@@ -8,6 +8,7 @@ async function executeSql(query: string, params: any[] = []) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-OrganizArte-Key': 'organizarte-edge-sec-2026',
       },
       body: JSON.stringify({ query, params }),
     });
@@ -24,7 +25,10 @@ async function executeSql(query: string, params: any[] = []) {
   try {
     const fallbackResponse = await fetch('http://localhost:4000/api/db', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-OrganizArte-Key': 'organizarte-edge-sec-2026',
+      },
       body: JSON.stringify({ query, params }),
     });
     if (fallbackResponse.ok) {
@@ -41,11 +45,12 @@ async function executeSql(query: string, params: any[] = []) {
 // Helper: Resolve real user UUID from ID, email, or matricula
 async function resolveRealUserId(studentIdOrEmailOrMatricula: string): Promise<string | null> {
   if (!studentIdOrEmailOrMatricula) return null;
+  const safeSearch = studentIdOrEmailOrMatricula.replace(/'/g, "''");
   const query = `
     SELECT id FROM users
-    WHERE id::text = '${studentIdOrEmailOrMatricula}'
-       OR LOWER(email) = LOWER('${studentIdOrEmailOrMatricula}')
-       OR LOWER(matricula) = LOWER('${studentIdOrEmailOrMatricula}')
+    WHERE id::text = '${safeSearch}'
+       OR LOWER(email) = LOWER('${safeSearch}')
+       OR LOWER(matricula) = LOWER('${safeSearch}')
     LIMIT 1;
   `;
   const userRows = await executeSql(query);
@@ -54,7 +59,8 @@ async function resolveRealUserId(studentIdOrEmailOrMatricula: string): Promise<s
 
 // 0. Fetch, Create, Edit & Delete Dynamic Artistic Companies (Compañías / Elencos)
 export async function fetchLiveCompanies(campusName: string = 'Tec Campus Laguna (Torreón)'): Promise<{ id: string; name: string; discipline: string; emoji: string; campusName: string }[]> {
-  const rows = await executeSql(`SELECT * FROM artistic_companies WHERE is_active = true AND (campus_name = '${campusName}' OR campus_name IS NULL) ORDER BY created_at ASC;`);
+  const safeCampus = campusName.replace(/'/g, "''");
+  const rows = await executeSql(`SELECT * FROM artistic_companies WHERE is_active = true AND (campus_name = '${safeCampus}' OR campus_name IS NULL) ORDER BY created_at ASC;`);
   if (!rows || rows.length === 0) {
     return [];
   }
@@ -68,25 +74,32 @@ export async function fetchLiveCompanies(campusName: string = 'Tec Campus Laguna
 }
 
 export async function createCompanyInNeon(name: string, discipline: string, emoji: string, campusName: string = 'Tec Campus Laguna (Torreón)') {
+  const safeName = name.replace(/'/g, "''");
+  const safeDisc = discipline.replace(/'/g, "''");
+  const safeCampus = campusName.replace(/'/g, "''");
   const query = `
     INSERT INTO artistic_companies (name, discipline, emoji, campus_name)
-    VALUES ('${name}', '${discipline}', '${emoji}', '${campusName}')
+    VALUES ('${safeName}', '${safeDisc}', '${emoji}', '${safeCampus}')
     ON CONFLICT (name) DO NOTHING;
   `;
   await executeSql(query);
 }
 
 export async function updateCompanyInNeon(id: string, name: string, discipline: string, emoji: string) {
+  const safeId = id.replace(/'/g, "''");
+  const safeName = name.replace(/'/g, "''");
+  const safeDisc = discipline.replace(/'/g, "''");
   const query = `
     UPDATE artistic_companies
-    SET name = '${name}', discipline = '${discipline}', emoji = '${emoji}'
-    WHERE id = '${id}' OR name = '${name}';
+    SET name = '${safeName}', discipline = '${safeDisc}', emoji = '${emoji}'
+    WHERE id = '${safeId}' OR name = '${safeName}';
   `;
   await executeSql(query);
 }
 
 export async function deleteCompanyInNeon(id: string) {
-  const query = `UPDATE artistic_companies SET is_active = false WHERE id = '${id}';`;
+  const safeId = id.replace(/'/g, "''");
+  const query = `UPDATE artistic_companies SET is_active = false WHERE id = '${safeId}';`;
   await executeSql(query);
 }
 
@@ -130,27 +143,34 @@ export async function fetchLiveCastRoles(companyName: string = 'Ensamble Musical
 }
 
 export async function createCastRoleInNeon(showTitle: string, companyName: string, characterName: string, roleCategory: string, requiredDiscipline: string) {
+  const safeShow = showTitle.replace(/'/g, "''");
+  const safeCompany = companyName.replace(/'/g, "''");
+  const safeChar = characterName.replace(/'/g, "''");
+  const safeCat = roleCategory.replace(/'/g, "''");
+  const safeDisc = requiredDiscipline.replace(/'/g, "''");
+
   const showQuery = `
     INSERT INTO show_casts (company_name, show_title)
-    VALUES ('${companyName}', '${showTitle}')
+    VALUES ('${safeCompany}', '${safeShow}')
     ON CONFLICT DO NOTHING;
   `;
   await executeSql(showQuery);
 
-  const getShow = await executeSql(`SELECT id FROM show_casts WHERE show_title = '${showTitle}' LIMIT 1;`);
+  const getShow = await executeSql(`SELECT id FROM show_casts WHERE show_title = '${safeShow}' LIMIT 1;`);
   const showId = getShow[0]?.id;
 
   if (showId) {
     const roleQuery = `
       INSERT INTO cast_roles (show_id, character_name, role_category, required_discipline)
-      VALUES ('${showId}', '${characterName}', '${roleCategory}', '${requiredDiscipline}');
+      VALUES ('${showId}', '${safeChar}', '${safeCat}', '${safeDisc}');
     `;
     await executeSql(roleQuery);
   }
 }
 
 export async function deleteCastRoleInNeon(roleId: string) {
-  const query = `DELETE FROM cast_roles WHERE id = '${roleId}';`;
+  const safeId = roleId.replace(/'/g, "''");
+  const query = `DELETE FROM cast_roles WHERE id = '${safeId}';`;
   await executeSql(query);
 }
 
@@ -174,9 +194,17 @@ export async function fetchLiveStudents(): Promise<StudentProfile[]> {
 
 // 1b. Create Student directly from Admin in Neon Postgres
 export async function createStudentInNeon(student: StudentProfile) {
+  const safeEmail = student.email.replace(/'/g, "''");
+  const safeName = student.name.replace(/'/g, "''");
+  const safeMatricula = student.matricula.replace(/'/g, "''");
+  const safeCampus = student.campus.replace(/'/g, "''");
+  const safeCompany = student.companyName.replace(/'/g, "''");
+  const safeDisc = student.discipline.replace(/'/g, "''");
+  const safeSec = student.section.replace(/'/g, "''");
+
   const query = `
     INSERT INTO users (email, name, matricula, campus, role, status, company_name, discipline, section)
-    VALUES ('${student.email}', '${student.name}', '${student.matricula}', '${student.campus}', '${student.role}', '${student.status}', '${student.companyName}', '${student.discipline}', '${student.section}')
+    VALUES ('${safeEmail}', '${safeName}', '${safeMatricula}', '${safeCampus}', '${student.role}', '${student.status}', '${safeCompany}', '${safeDisc}', '${safeSec}')
     ON CONFLICT (email) DO UPDATE SET status = 'ACTIVE'
     RETURNING *;
   `;
@@ -187,25 +215,32 @@ export async function createStudentInNeon(student: StudentProfile) {
 export async function deleteStudentInNeon(studentId: string) {
   const realUserId = await resolveRealUserId(studentId);
   const targetId = realUserId || studentId;
+  const safeId = targetId.replace(/'/g, "''");
   // Clear associated schedules first
-  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${targetId}';`);
+  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${safeId}';`);
   // Delete user from users table
-  await executeSql(`DELETE FROM users WHERE id::text = '${targetId}';`);
+  await executeSql(`DELETE FROM users WHERE id::text = '${safeId}';`);
 }
 
 // 2. Approve Student in Neon Postgres
 export async function approveStudentInNeon(studentId: string, company: string, discipline: string, section: string) {
+  const safeId = studentId.replace(/'/g, "''");
+  const safeCompany = company.replace(/'/g, "''");
+  const safeDisc = discipline.replace(/'/g, "''");
+  const safeSec = section.replace(/'/g, "''");
+
   const query = `
     UPDATE users 
-    SET status = 'ACTIVE', company_name = '${company}', discipline = '${discipline}', section = '${section}'
-    WHERE id = '${studentId}'
+    SET status = 'ACTIVE', company_name = '${safeCompany}', discipline = '${safeDisc}', section = '${safeSec}'
+    WHERE id = '${safeId}'
   `;
   await executeSql(query);
 }
 
 // 3. Reject Student in Neon Postgres
 export async function rejectStudentInNeon(studentId: string) {
-  const query = `UPDATE users SET status = 'REJECTED' WHERE id = '${studentId}'`;
+  const safeId = studentId.replace(/'/g, "''");
+  const query = `UPDATE users SET status = 'REJECTED' WHERE id = '${safeId}'`;
   await executeSql(query);
 }
 
@@ -253,24 +288,33 @@ export async function saveStudentScheduleCourseInNeon(
     return;
   }
 
+  const safeUserId = realUserId.replace(/'/g, "''");
+  const safeDay = dayOfWeek.replace(/'/g, "''");
+  const safeStart = startTime.replace(/'/g, "''");
+  const safeEnd = endTime.replace(/'/g, "''");
+  const safeCourse = courseName.replace(/'/g, "''");
+  const safePeriod = periodName.replace(/'/g, "''");
+  const safeValid = validUntil.replace(/'/g, "''");
+
   const query = `
     INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
-    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName.replace(/'/g, "''")}', true, '${periodName}', '${validUntil}');
+    VALUES ('${safeUserId}', '${safeDay}', '${safeStart}', '${safeEnd}', '${safeCourse}', true, '${safePeriod}', '${safeValid}');
   `;
   await executeSql(query);
 }
 
 export async function clearStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string) {
   const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
-  if (realUserId) {
-    await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
-  } else if (studentIdOrEmailOrMatricula) {
-    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentIdOrEmailOrMatricula}';`);
+  const targetId = realUserId || studentIdOrEmailOrMatricula;
+  if (targetId) {
+    const safeId = targetId.replace(/'/g, "''");
+    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${safeId}';`);
   }
 }
 
 export async function deleteStudentScheduleCourseInNeon(scheduleId: string) {
-  const query = `DELETE FROM student_schedules WHERE id = '${scheduleId}';`;
+  const safeId = scheduleId.replace(/'/g, "''");
+  const query = `DELETE FROM student_schedules WHERE id = '${safeId}';`;
   await executeSql(query);
 }
 
@@ -295,26 +339,32 @@ export async function fetchLiveRooms(): Promise<RehearsalRoom[]> {
 }
 
 export async function createRoomInNeon(name: string, building: string, capacity: number, equipment: string[]) {
-  const eqArrayStr = JSON.stringify(equipment).replace(/"/g, '\"');
+  const safeName = name.replace(/'/g, "''");
+  const safeBuilding = building.replace(/'/g, "''");
+  const eqArrayStr = JSON.stringify(equipment).replace(/'/g, "''");
   const query = `
     INSERT INTO rehearsal_rooms (name, building, capacity, equipment, status)
-    VALUES ('${name}', '${building}', ${capacity}, '${eqArrayStr}'::jsonb, 'AVAILABLE');
+    VALUES ('${safeName}', '${safeBuilding}', ${capacity}, '${eqArrayStr}'::jsonb, 'AVAILABLE');
   `;
   await executeSql(query);
 }
 
 export async function updateRoomInNeon(id: string, name: string, building: string, capacity: number, equipment: string[]) {
-  const eqArrayStr = JSON.stringify(equipment).replace(/"/g, '\"');
+  const safeId = id.replace(/'/g, "''");
+  const safeName = name.replace(/'/g, "''");
+  const safeBuilding = building.replace(/'/g, "''");
+  const eqArrayStr = JSON.stringify(equipment).replace(/'/g, "''");
   const query = `
     UPDATE rehearsal_rooms
-    SET name = '${name}', building = '${building}', capacity = ${capacity}, equipment = '${eqArrayStr}'::jsonb
-    WHERE id = '${id}' OR name = '${name}';
+    SET name = '${safeName}', building = '${safeBuilding}', capacity = ${capacity}, equipment = '${eqArrayStr}'::jsonb
+    WHERE id = '${safeId}' OR name = '${safeName}';
   `;
   await executeSql(query);
 }
 
 export async function deleteRoomInNeon(roomId: string) {
-  const query = `DELETE FROM rehearsal_rooms WHERE id = '${roomId}';`;
+  const safeId = roomId.replace(/'/g, "''");
+  const query = `DELETE FROM rehearsal_rooms WHERE id = '${safeId}';`;
   await executeSql(query);
 }
 
@@ -339,13 +389,15 @@ export async function fetchLiveBookings(): Promise<RoomBooking[]> {
 
 // 6. Approve Room Booking in Neon
 export async function approveBookingInNeon(bookingId: string) {
-  const query = `UPDATE room_bookings SET status = 'APPROVED' WHERE id = '${bookingId}'`;
+  const safeId = bookingId.replace(/'/g, "''");
+  const query = `UPDATE room_bookings SET status = 'APPROVED' WHERE id = '${safeId}'`;
   await executeSql(query);
 }
 
 // 7. Reject Room Booking in Neon
 export async function rejectBookingInNeon(bookingId: string) {
-  const query = `UPDATE room_bookings SET status = 'REJECTED' WHERE id = '${bookingId}'`;
+  const safeId = bookingId.replace(/'/g, "''");
+  const query = `UPDATE room_bookings SET status = 'REJECTED' WHERE id = '${safeId}'`;
   await executeSql(query);
 }
 
@@ -369,9 +421,15 @@ export async function fetchLiveRehearsals(): Promise<RehearsalEvent[]> {
 
 // 9. Create Rehearsal in Neon
 export async function createRehearsalInNeon(r: RehearsalEvent) {
+  const safeTitle = r.title.replace(/'/g, "''");
+  const safeCompany = r.companyName.replace(/'/g, "''");
+  const safeDisc = r.discipline.replace(/'/g, "''");
+  const safeLocation = r.location.replace(/'/g, "''");
+  const safeDesc = (r.description || '').replace(/'/g, "''");
+
   const query = `
     INSERT INTO rehearsals (title, company_name, discipline, rehearsal_date, start_time, end_time, location, description, qr_check_in_code)
-    VALUES ('${r.title}', '${r.companyName}', '${r.discipline}', '${r.date}', '${r.startTime}', '${r.endTime}', '${r.location}', '${r.description || ''}', '${r.qrCheckInCode}')
+    VALUES ('${safeTitle}', '${safeCompany}', '${safeDisc}', '${r.date}', '${r.startTime}', '${r.endTime}', '${safeLocation}', '${safeDesc}', '${r.qrCheckInCode}')
   `;
   await executeSql(query);
 }
@@ -399,9 +457,15 @@ export async function fetchLiveSongs(): Promise<Song[]> {
 
 // 11. Create Song in Neon
 export async function createSongInNeon(s: Song) {
+  const safeTitle = s.title.replace(/'/g, "''");
+  const safeComposer = s.composer.replace(/'/g, "''");
+  const safeCompany = s.companyName.replace(/'/g, "''");
+  const safeGenre = s.genre.replace(/'/g, "''");
+  const safeKey = s.key.replace(/'/g, "''");
+
   const query = `
     INSERT INTO songs (title, composer, company_name, genre, song_key, duration_seconds)
-    VALUES ('${s.title}', '${s.composer}', '${s.companyName}', '${s.genre}', '${s.key}', ${s.durationSeconds})
+    VALUES ('${safeTitle}', '${safeComposer}', '${safeCompany}', '${safeGenre}', '${safeKey}', ${s.durationSeconds})
   `;
   await executeSql(query);
 }
@@ -429,9 +493,13 @@ export async function sendAdminMessage(msg: {
   receiverName: string;
   content: string;
 }) {
+  const safeSenderName = msg.senderName.replace(/'/g, "''");
+  const safeReceiverName = msg.receiverName.replace(/'/g, "''");
+  const safeContent = msg.content.replace(/'/g, "''");
+
   const query = `
     INSERT INTO messages (sender_id, sender_name, sender_role, receiver_id, receiver_name, company_name, content)
-    VALUES ('${msg.senderId}', '${msg.senderName}', 'ADMIN', '${msg.receiverId}', '${msg.receiverName}', 'Dirección Arte y Cultura', '${msg.content.replace(/'/g, "''")}')
+    VALUES ('${msg.senderId}', '${safeSenderName}', 'ADMIN', '${msg.receiverId}', '${safeReceiverName}', 'Dirección Arte y Cultura', '${safeContent}')
     RETURNING *;
   `;
   await executeSql(query);

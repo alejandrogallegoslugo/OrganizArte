@@ -1,6 +1,25 @@
 // Live Neon Postgres API Integration for Student PWA (Cloudflare Pages Function + Local Proxy)
 import { StudentProfile, RoomBooking, RehearsalEvent, Song, TimeSlot } from './shared';
 
+export interface InternalMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  receiverId: string;
+  receiverName: string;
+  companyName?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatContact {
+  id: string;
+  name: string;
+  role: string;
+  companyName?: string;
+}
+
 async function executeSql(query: string, params: any[] = []) {
   // 1. Primary: Relative Cloudflare Pages Function /api/db (Zero CORS, Same-Origin, Cloudflare Edge)
   try {
@@ -8,6 +27,7 @@ async function executeSql(query: string, params: any[] = []) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-OrganizArte-Key': 'organizarte-edge-sec-2026',
       },
       body: JSON.stringify({ query, params }),
     });
@@ -24,7 +44,10 @@ async function executeSql(query: string, params: any[] = []) {
   try {
     const fallbackResponse = await fetch('http://localhost:4000/api/db', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-OrganizArte-Key': 'organizarte-edge-sec-2026',
+      },
       body: JSON.stringify({ query, params }),
     });
     if (fallbackResponse.ok) {
@@ -41,104 +64,38 @@ async function executeSql(query: string, params: any[] = []) {
 // Helper: Resolve real user UUID from ID, email, or matricula
 async function resolveRealUserId(studentIdOrEmailOrMatricula: string): Promise<string | null> {
   if (!studentIdOrEmailOrMatricula) return null;
+  const safeSearch = studentIdOrEmailOrMatricula.replace(/'/g, "''");
   const query = `
     SELECT id FROM users
-    WHERE id::text = '${studentIdOrEmailOrMatricula}'
-       OR LOWER(email) = LOWER('${studentIdOrEmailOrMatricula}')
-       OR LOWER(matricula) = LOWER('${studentIdOrEmailOrMatricula}')
+    WHERE id::text = '${safeSearch}'
+       OR LOWER(email) = LOWER('${safeSearch}')
+       OR LOWER(matricula) = LOWER('${safeSearch}')
     LIMIT 1;
   `;
   const userRows = await executeSql(query);
   return userRows[0]?.id || null;
 }
 
-// 0. Fetch real student profile by Email or Matricula from Neon DB
-export async function fetchStudentProfileByEmail(emailOrMatricula: string): Promise<StudentProfile | null> {
-  const query = `
-    SELECT * FROM users
-    WHERE LOWER(email) = LOWER('${emailOrMatricula}')
-       OR LOWER(matricula) = LOWER('${emailOrMatricula}')
-    LIMIT 1;
-  `;
-  const rows = await executeSql(query);
-  if (rows && rows.length > 0) {
-    const r = rows[0];
-    return {
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      matricula: r.matricula || 'N/A',
-      campus: r.campus || 'Tec Campus Laguna (Torreón)',
-      role: r.role || 'STUDENT',
-      status: r.status || 'ACTIVE',
-      companyName: r.company_name || 'Ensamble Musical Tec',
-      discipline: r.discipline || 'MUSICA',
-      section: r.section || 'General',
-      createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '2026-08-09',
-    };
-  }
-  return null;
-}
+// 1. Register new Student in Neon DB
+export async function registerStudentInNeon(student: {
+  name: string;
+  email: string;
+  matricula: string;
+  campus: string;
+  discipline: string;
+  companyName: string;
+}): Promise<StudentProfile | null> {
+  const safeEmail = student.email.replace(/'/g, "''");
+  const safeName = student.name.replace(/'/g, "''");
+  const safeMatricula = student.matricula.replace(/'/g, "''");
+  const safeCampus = student.campus.replace(/'/g, "''");
+  const safeDisc = student.discipline.replace(/'/g, "''");
+  const safeComp = student.companyName.replace(/'/g, "''");
 
-// 0b. Save Student Schedule Course in Neon DB (strictly tied to resolved user UUID)
-export async function saveStudentScheduleCourseInNeon(
-  studentIdOrEmailOrMatricula: string,
-  dayOfWeek: string,
-  startTime: string,
-  endTime: string,
-  courseName: string,
-  periodName: string = 'Semestre Agosto - Diciembre 2026',
-  validUntil: string = '2026-12-15'
-) {
-  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
-  if (!realUserId) {
-    console.warn(`[saveSchedule] User ${studentIdOrEmailOrMatricula} not found in database.`);
-    return;
-  }
-
-  const query = `
-    INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
-    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName.replace(/'/g, "''")}', true, '${periodName}', '${validUntil}');
-  `;
-  await executeSql(query);
-}
-
-// 0c. Fetch live student schedules from Neon DB for student (STRICT SINGLE-STUDENT ISOLATION)
-export async function fetchStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string): Promise<TimeSlot[]> {
-  if (!studentIdOrEmailOrMatricula) return [];
-
-  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
-  if (!realUserId) return [];
-
-  // Strictly query ONLY courses belonging to this exact student UUID
-  const rows = await executeSql(`SELECT * FROM student_schedules WHERE student_id = '${realUserId}' ORDER BY day_of_week ASC, start_time ASC;`);
-
-  return rows.map((r: any, idx: number) => ({
-    id: r.id || `slot-${idx}`,
-    dayOfWeek: r.day_of_week,
-    startTime: r.start_time,
-    endTime: r.end_time,
-    courseName: r.course_name || 'Clase Académica MiTec',
-    isAcademicClass: r.is_academic_class ?? true,
-  }));
-}
-
-// 0d. Clear old student schedules before uploading new schedule with Gemini IA
-export async function clearStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string) {
-  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
-  if (realUserId) {
-    await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
-  } else if (studentIdOrEmailOrMatricula) {
-    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentIdOrEmailOrMatricula}';`);
-  }
-}
-
-// 1. Register student directly into Neon Postgres DB
-export async function registerStudentInNeon(student: StudentProfile): Promise<StudentProfile> {
   const query = `
     INSERT INTO users (email, name, matricula, campus, role, status, company_name, discipline, section)
-    VALUES ('${student.email}', '${student.name}', '${student.matricula}', '${student.campus}', '${student.role}', '${student.status}', '${student.companyName}', '${student.discipline}', '${student.section}')
-    ON CONFLICT (email) DO UPDATE SET status = 'ACTIVE'
+    VALUES ('${safeEmail}', '${safeName}', '${safeMatricula}', '${safeCampus}', 'STUDENT', 'PENDING_APPROVAL', '${safeComp}', '${safeDisc}', 'General')
+    ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, matricula = EXCLUDED.matricula
     RETURNING *;
   `;
 
@@ -156,25 +113,130 @@ export async function registerStudentInNeon(student: StudentProfile): Promise<St
       companyName: r.company_name,
       discipline: r.discipline,
       section: r.section,
-      createdAt: new Date(r.created_at).toISOString().split('T')[0],
+      createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '2026-08-09',
     };
   }
-  return student;
+  return null;
 }
 
-// 2. Student Request Room Booking in Neon
-export async function createRoomBookingInNeon(booking: RoomBooking) {
+// 2. Fetch Student Profile by Email or Matricula
+export async function fetchStudentProfileInNeon(emailOrMatricula: string): Promise<StudentProfile | null> {
+  const realUserId = await resolveRealUserId(emailOrMatricula);
+  if (!realUserId) return null;
+
+  const query = `SELECT * FROM users WHERE id = '${realUserId}' LIMIT 1;`;
+  const rows = await executeSql(query);
+  if (rows && rows.length > 0) {
+    const r = rows[0];
+    return {
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      matricula: r.matricula,
+      campus: r.campus,
+      role: r.role,
+      status: r.status,
+      companyName: r.company_name,
+      discipline: r.discipline,
+      section: r.section,
+      createdAt: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '2026-08-09',
+    };
+  }
+  return null;
+}
+
+export const fetchStudentProfileByEmail = fetchStudentProfileInNeon;
+
+// 3. Save Student Schedule Course in Neon DB
+export async function saveStudentScheduleCourseInNeon(
+  studentIdOrEmailOrMatricula: string,
+  dayOfWeek: string,
+  startTime: string,
+  endTime: string,
+  courseName: string,
+  periodName: string = 'Semestre Agosto - Diciembre 2026',
+  validUntil: string = '2026-12-15'
+) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (!realUserId) {
+    console.warn(`User ${studentIdOrEmailOrMatricula} not found for schedule insertion.`);
+    return;
+  }
+
+  const safeUserId = realUserId.replace(/'/g, "''");
+  const safeDay = dayOfWeek.replace(/'/g, "''");
+  const safeStart = startTime.replace(/'/g, "''");
+  const safeEnd = endTime.replace(/'/g, "''");
+  const safeCourse = courseName.replace(/'/g, "''");
+  const safePeriod = periodName.replace(/'/g, "''");
+  const safeValid = validUntil.replace(/'/g, "''");
+
   const query = `
-    INSERT INTO room_bookings (company_name, purpose, booking_date, start_time, end_time, status)
-    VALUES ('${booking.companyName}', '${booking.purpose}', '${booking.date}', '${booking.startTime}', '${booking.endTime}', '${booking.status}')
-    RETURNING *;
+    INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
+    VALUES ('${safeUserId}', '${safeDay}', '${safeStart}', '${safeEnd}', '${safeCourse}', true, '${safePeriod}', '${safeValid}');
   `;
   await executeSql(query);
 }
 
-// 3. Fetch live rehearsals for student
-export async function fetchStudentRehearsals(): Promise<RehearsalEvent[]> {
-  const rows = await executeSql('SELECT * FROM rehearsals ORDER BY rehearsal_date ASC');
+// 3b. Fetch Student Schedules strictly for the logged-in student
+export async function fetchStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string): Promise<TimeSlot[]> {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (!realUserId) return [];
+
+  const safeUserId = realUserId.replace(/'/g, "''");
+  const query = `SELECT * FROM student_schedules WHERE student_id = '${safeUserId}' ORDER BY day_of_week ASC;`;
+  const rows = await executeSql(query);
+  return rows.map((r: any) => ({
+    id: r.id,
+    day: r.day_of_week,
+    startTime: r.start_time,
+    endTime: r.end_time,
+    courseName: r.course_name,
+    isAcademicClass: r.is_academic_class ?? true,
+    periodName: r.period_name || 'Semestre Agosto - Diciembre 2026',
+    validUntil: r.valid_until || '2026-12-15',
+  }));
+}
+
+// 3c. Clear Student Schedules before replacing with new Gemini OCR upload
+export async function clearStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  const targetId = realUserId || studentIdOrEmailOrMatricula;
+  if (targetId) {
+    const safeId = targetId.replace(/'/g, "''");
+    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${safeId}';`);
+  }
+}
+
+// 4. Request Room Booking in Neon DB
+export async function createRoomBookingInNeon(booking: {
+  roomId: string;
+  studentId: string;
+  studentName: string;
+  companyName: string;
+  purpose: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+}): Promise<boolean> {
+  const safeRoom = booking.roomId.replace(/'/g, "''");
+  const safeStud = booking.studentId.replace(/'/g, "''");
+  const safeComp = booking.companyName.replace(/'/g, "''");
+  const safePurp = `${booking.studentName} - ${booking.purpose}`.replace(/'/g, "''");
+
+  const query = `
+    INSERT INTO room_bookings (room_id, requested_by_student_id, company_name, purpose, booking_date, start_time, end_time, status)
+    VALUES ('${safeRoom}', '${safeStud}', '${safeComp}', '${safePurp}', '${booking.bookingDate}', '${booking.startTime}', '${booking.endTime}', 'PENDING');
+  `;
+  await executeSql(query);
+  return true;
+}
+
+// 5. Fetch Rehearsals for Student's Company
+export async function fetchRehearsalsForCompanyInNeon(companyName: string): Promise<RehearsalEvent[]> {
+  const safeCompany = companyName.replace(/'/g, "''");
+  const query = `SELECT * FROM rehearsals WHERE company_name = '${safeCompany}' OR company_name = 'TODAS' ORDER BY rehearsal_date ASC;`;
+  const rows = await executeSql(query);
   return rows.map((r: any) => ({
     id: r.id,
     title: r.title,
@@ -190,8 +252,13 @@ export async function fetchStudentRehearsals(): Promise<RehearsalEvent[]> {
   }));
 }
 
-export async function fetchStudentSongs(): Promise<Song[]> {
-  const rows = await executeSql('SELECT * FROM songs ORDER BY created_at DESC');
+export const fetchStudentRehearsals = fetchRehearsalsForCompanyInNeon;
+
+// 6. Fetch Songs & Partituras for Student's Company
+export async function fetchSongsForCompanyInNeon(companyName: string): Promise<Song[]> {
+  const safeCompany = companyName.replace(/'/g, "''");
+  const query = `SELECT * FROM songs WHERE company_name = '${safeCompany}' OR company_name = 'TODAS' ORDER BY title ASC;`;
+  const rows = await executeSql(query);
   return rows.map((r: any) => ({
     id: r.id,
     title: r.title,
@@ -210,35 +277,12 @@ export async function fetchStudentSongs(): Promise<Song[]> {
   }));
 }
 
-// 5. Chat & Internal Messaging API Functions
-export interface InternalMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  senderRole: string;
-  receiverId: string;
-  receiverName: string;
-  companyName?: string;
-  content: string;
-  createdAt: string;
-}
+export const fetchStudentSongs = fetchSongsForCompanyInNeon;
 
-export interface ChatContact {
-  id: string;
-  name: string;
-  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
-  email: string;
-  companyName?: string;
-}
-
-export async function fetchMessagesInNeon(userMatriculaOrId: string): Promise<InternalMessage[]> {
-  const query = `
-    SELECT * FROM messages 
-    WHERE receiver_id = 'ALL' 
-       OR receiver_id = '${userMatriculaOrId}'
-       OR sender_id = '${userMatriculaOrId}'
-    ORDER BY created_at ASC;
-  `;
+// 7. Fetch Chat Messages for Student's Company
+export async function fetchChatMessagesInNeon(companyName: string): Promise<InternalMessage[]> {
+  const safeCompany = companyName.replace(/'/g, "''");
+  const query = `SELECT * FROM messages WHERE company_name = '${safeCompany}' OR receiver_id = 'ALL' ORDER BY created_at ASC;`;
   const rows = await executeSql(query);
   return rows.map((r: any) => ({
     id: r.id,
@@ -249,43 +293,54 @@ export async function fetchMessagesInNeon(userMatriculaOrId: string): Promise<In
     receiverName: r.receiver_name || 'Todos',
     companyName: r.company_name,
     content: r.content,
-    createdAt: r.created_at ? new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
+    createdAt: r.created_at ? new Date(r.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Ahora',
   }));
 }
 
-export async function sendMessageInNeon(msg: {
-  senderId: string;
-  senderName: string;
-  senderRole: string;
-  receiverId?: string;
-  receiverName?: string;
-  companyName?: string;
-  content: string;
-}) {
+export async function fetchMessagesInNeon(companyName: string): Promise<InternalMessage[]> {
+  return fetchChatMessagesInNeon(companyName);
+}
+
+export async function sendMessageInNeon(msg: { senderId: string; senderName: string; receiverId: string; receiverName: string; companyName: string; content: string }) {
+  const safeSenderName = msg.senderName.replace(/'/g, "''");
+  const safeReceiverId = msg.receiverId.replace(/'/g, "''");
+  const safeReceiverName = msg.receiverName.replace(/'/g, "''");
+  const safeCompany = msg.companyName.replace(/'/g, "''");
+  const safeContent = msg.content.replace(/'/g, "''");
+
   const query = `
     INSERT INTO messages (sender_id, sender_name, sender_role, receiver_id, receiver_name, company_name, content)
-    VALUES ('${msg.senderId}', '${msg.senderName}', '${msg.senderRole}', '${msg.receiverId || 'ALL'}', '${msg.receiverName || 'Todos'}', '${msg.companyName || 'General'}', '${msg.content.replace(/'/g, "''")}')
+    VALUES ('${msg.senderId}', '${safeSenderName}', 'STUDENT', '${safeReceiverId}', '${safeReceiverName}', '${safeCompany}', '${safeContent}')
     RETURNING *;
   `;
   await executeSql(query);
 }
 
 export async function fetchUsersForChatInNeon(): Promise<ChatContact[]> {
-  const rows = await executeSql(`SELECT id, name, role, email, company_name FROM users ORDER BY name ASC;`);
-  const contacts: ChatContact[] = [
-    { id: 'admin-1', name: 'Prof. Alejandro Gallegos (Director/Admin)', role: 'ADMIN', email: 'admin@tec.mx', companyName: 'Dirección Arte y Cultura' },
-    { id: 'all-channel', name: '📢 Canal General Arte y Cultura', role: 'ADMIN', email: 'general@tec.mx', companyName: 'Todos los Alumnos' },
-  ];
-  if (rows && rows.length > 0) {
-    rows.forEach((r: any) => {
-      contacts.push({
-        id: r.id,
-        name: r.name,
-        role: r.role || 'STUDENT',
-        email: r.email,
-        companyName: r.company_name,
-      });
-    });
-  }
-  return contacts;
+  const rows = await executeSql("SELECT id, name, role, company_name FROM users WHERE status = 'ACTIVE' ORDER BY name ASC;");
+  return rows.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    role: r.role || 'STUDENT',
+    companyName: r.company_name,
+  }));
+}
+
+// 8. Send Chat Message from Student
+export async function sendChatMessageInNeon(msg: {
+  senderId: string;
+  senderName: string;
+  companyName: string;
+  content: string;
+}) {
+  const safeSenderName = msg.senderName.replace(/'/g, "''");
+  const safeCompany = msg.companyName.replace(/'/g, "''");
+  const safeContent = msg.content.replace(/'/g, "''");
+
+  const query = `
+    INSERT INTO messages (sender_id, sender_name, sender_role, receiver_id, receiver_name, company_name, content)
+    VALUES ('${msg.senderId}', '${safeSenderName}', 'STUDENT', 'ALL', 'Todos', '${safeCompany}', '${safeContent}')
+    RETURNING *;
+  `;
+  await executeSql(query);
 }

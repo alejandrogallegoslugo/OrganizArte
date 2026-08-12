@@ -1,5 +1,18 @@
 export async function onRequestPost(context: any) {
   try {
+    // 1. Edge Security Check: Verify secret app header or origin
+    const appHeader = context.request.headers.get('x-organizarte-key');
+    const origin = context.request.headers.get('origin') || context.request.headers.get('referer') || '';
+    
+    // Validate request origin or security key
+    const isAllowedOrigin = origin.includes('organizarte') || origin.includes('pages.dev') || origin.includes('localhost');
+    if (!isAllowedOrigin && appHeader !== 'organizarte-edge-sec-2026') {
+      return new Response(JSON.stringify({ error: 'Unauthorized Edge Access', rows: [] }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await context.request.json();
     const { query, params } = body;
 
