@@ -7,17 +7,23 @@ interface ScheduleUploadAIProps {
   currentSlots: TimeSlot[];
   onUpdateSlots: (newSlots: TimeSlot[]) => void;
   studentId?: string;
+  studentMatricula?: string;
+  studentEmail?: string;
 }
 
 export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
   currentSlots,
   onUpdateSlots,
-  studentId = 'bec072db-ee16-4a0a-aa2c-20293633e5d3',
+  studentId,
+  studentMatricula,
+  studentEmail,
 }) => {
   const [loading, setLoading] = useState(false);
   const [scheduleStatus, setScheduleStatus] = useState<'IDLE' | 'PENDING_VALIDATION' | 'APPROVED'>('IDLE');
   const [periodName, setPeriodName] = useState('Semestre Agosto - Diciembre 2026');
   const [validUntil, setValidUntil] = useState('2026-12-15');
+
+  const userIdentifier = studentMatricula || studentEmail || studentId || '';
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,18 +49,20 @@ export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
               isAcademicClass: true,
             }));
 
-            // Clear old mock schedules in database and save real extracted courses
-            await clearStudentSchedulesInNeon(studentId);
-            for (const c of parsed.courses) {
-              await saveStudentScheduleCourseInNeon(
-                studentId,
-                c.dayOfWeek || 'Lunes',
-                c.startTime || '09:00',
-                c.endTime || '11:00',
-                c.name || 'Materia Tec',
-                periodName,
-                validUntil
-              );
+            // REPLACEMENT POLICY: Clear ALL previous courses for this exact student in database
+            if (userIdentifier) {
+              await clearStudentSchedulesInNeon(userIdentifier);
+              for (const c of parsed.courses) {
+                await saveStudentScheduleCourseInNeon(
+                  userIdentifier,
+                  c.dayOfWeek || 'Lunes',
+                  c.startTime || '09:00',
+                  c.endTime || '11:00',
+                  c.name || 'Materia Tec',
+                  periodName,
+                  validUntil
+                );
+              }
             }
 
             onUpdateSlots(generatedSlots);
@@ -86,7 +94,7 @@ export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
           {periodName}
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Válido en la plataforma hasta el: <strong>{validUntil}</strong> (6 meses por semestre). Al término de esta fecha se solicitará actualización de materias para el nuevo periodo.
+          Válido en la plataforma hasta el: <strong>{validUntil}</strong> (6 meses por semestre). Al cargar un nuevo horario, las materias anteriores serán reemplazadas automáticamente.
         </p>
       </div>
 
@@ -110,7 +118,7 @@ export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
           Escáner de Horarios MiTec con IA
         </h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '20px' }}>
-          Sube tu captura de pantalla o PDF de clases de MiTec. La Inteligencia Artificial extraerá tus materias y las <strong>guardará en tiempo real para la matriz de disponibilidad del Director</strong>.
+          Sube tu captura de pantalla o PDF de clases de MiTec. La Inteligencia Artificial extraerá únicamente tus materias y las <strong>guardará en tu perfil para la matriz de disponibilidad del Director</strong>.
         </p>
 
         {/* Custom Upload Drop Area */}
@@ -156,33 +164,39 @@ export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
       {/* Current Parsed Slots Grid */}
       <div className="pwa-card">
         <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FileText style={{ color: 'var(--primary)', width: '18px', height: '18px' }} /> Clases Extraídas por IA ({currentSlots.length})
+          <FileText style={{ color: 'var(--primary)', width: '18px', height: '18px' }} /> Mis Clases Extraídas por IA ({currentSlots.length})
         </h3>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {currentSlots.map((slot) => (
-            <div
-              key={slot.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 14px',
-                background: 'var(--bg-dark)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px'
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.85rem' }}>{slot.courseName}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{slot.day}</div>
+        {currentSlots.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            Aún no has subido tu horario de MiTec. Sube tu captura arriba para ver tus materias aquí.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {currentSlots.map((slot) => (
+              <div
+                key={slot.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  background: 'var(--bg-dark)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.85rem' }}>{slot.courseName}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{slot.day}</div>
+                </div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', background: 'rgba(2, 132, 199, 0.1)', padding: '4px 10px', borderRadius: '6px' }}>
+                  ⏰ {slot.startTime} - {slot.endTime}
+                </div>
               </div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', background: 'rgba(2, 132, 199, 0.1)', padding: '4px 10px', borderRadius: '6px' }}>
-                ⏰ {slot.startTime} - {slot.endTime}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* FULL-SCREEN PROCESSING MODAL - PREVENTS LEAVING THE SCREEN */}
@@ -242,7 +256,7 @@ export const ScheduleUploadAI: React.FC<ScheduleUploadAIProps> = ({
             </div>
 
             <div style={{ background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.3)', padding: '10px 14px', borderRadius: '10px', fontSize: '0.75rem', color: '#38bdf8', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <Sparkles style={{ width: '14px', height: '14px' }} /> Leyendo clases y sincronizando disponibilidad...
+              <Sparkles style={{ width: '14px', height: '14px' }} /> Leyendo clases y sustituyendo horario anterior...
             </div>
           </div>
         </div>

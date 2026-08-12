@@ -38,6 +38,20 @@ async function executeSql(query: string, params: any[] = []) {
   return [];
 }
 
+// Helper: Resolve real user UUID from ID, email, or matricula
+async function resolveRealUserId(studentIdOrEmailOrMatricula: string): Promise<string | null> {
+  if (!studentIdOrEmailOrMatricula) return null;
+  const query = `
+    SELECT id FROM users
+    WHERE id::text = '${studentIdOrEmailOrMatricula}'
+       OR LOWER(email) = LOWER('${studentIdOrEmailOrMatricula}')
+       OR LOWER(matricula) = LOWER('${studentIdOrEmailOrMatricula}')
+    LIMIT 1;
+  `;
+  const userRows = await executeSql(query);
+  return userRows[0]?.id || null;
+}
+
 // 0. Fetch, Create, Edit & Delete Dynamic Artistic Companies (Compañías / Elencos)
 export async function fetchLiveCompanies(campusName: string = 'Tec Campus Laguna (Torreón)'): Promise<{ id: string; name: string; discipline: string; emoji: string; campusName: string }[]> {
   const rows = await executeSql(`SELECT * FROM artistic_companies WHERE is_active = true AND (campus_name = '${campusName}' OR campus_name IS NULL) ORDER BY created_at ASC;`);
@@ -171,10 +185,12 @@ export async function createStudentInNeon(student: StudentProfile) {
 
 // 1c. Delete Student directly in Neon Postgres
 export async function deleteStudentInNeon(studentId: string) {
+  const realUserId = await resolveRealUserId(studentId);
+  const targetId = realUserId || studentId;
   // Clear associated schedules first
-  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentId}';`);
+  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${targetId}';`);
   // Delete user from users table
-  await executeSql(`DELETE FROM users WHERE id::text = '${studentId}';`);
+  await executeSql(`DELETE FROM users WHERE id::text = '${targetId}';`);
 }
 
 // 2. Approve Student in Neon Postgres
@@ -209,13 +225,24 @@ export async function fetchLiveSchedules(): Promise<StudentSchedule[]> {
   }));
 }
 
-export async function saveStudentScheduleCourseInNeon(studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName: string = 'Semestre Agosto - Diciembre 2026', validUntil: string = '2026-12-15') {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
-  const realUserId = userRows[0]?.id || studentId;
+export async function saveStudentScheduleCourseInNeon(
+  studentIdOrEmailOrMatricula: string,
+  dayOfWeek: string,
+  startTime: string,
+  endTime: string,
+  courseName: string,
+  periodName: string = 'Semestre Agosto - Diciembre 2026',
+  validUntil: string = '2026-12-15'
+) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (!realUserId) {
+    console.warn(`[admin saveSchedule] User ${studentIdOrEmailOrMatricula} not found.`);
+    return;
+  }
 
   const query = `
     INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
-    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName}', true, '${periodName}', '${validUntil}');
+    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName.replace(/'/g, "''")}', true, '${periodName}', '${validUntil}');
   `;
   await executeSql(query);
 }

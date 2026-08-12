@@ -38,6 +38,20 @@ async function executeSql(query: string, params: any[] = []) {
   return [];
 }
 
+// Helper: Resolve real user UUID from ID, email, or matricula
+async function resolveRealUserId(studentIdOrEmailOrMatricula: string): Promise<string | null> {
+  if (!studentIdOrEmailOrMatricula) return null;
+  const query = `
+    SELECT id FROM users
+    WHERE id::text = '${studentIdOrEmailOrMatricula}'
+       OR LOWER(email) = LOWER('${studentIdOrEmailOrMatricula}')
+       OR LOWER(matricula) = LOWER('${studentIdOrEmailOrMatricula}')
+    LIMIT 1;
+  `;
+  const userRows = await executeSql(query);
+  return userRows[0]?.id || null;
+}
+
 // 0. Fetch real student profile by Email or Matricula from Neon DB
 export async function fetchStudentProfileByEmail(emailOrMatricula: string): Promise<StudentProfile | null> {
   const query = `
@@ -66,38 +80,38 @@ export async function fetchStudentProfileByEmail(emailOrMatricula: string): Prom
   return null;
 }
 
-// 0b. Save Student Schedule Course in Neon DB
-export async function saveStudentScheduleCourseInNeon(studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName: string = 'Semestre Agosto - Diciembre 2026', validUntil: string = '2026-12-15') {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = '${studentId}' OR email = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
-  const realUserId = userRows[0]?.id || studentId;
+// 0b. Save Student Schedule Course in Neon DB (strictly tied to resolved user UUID)
+export async function saveStudentScheduleCourseInNeon(
+  studentIdOrEmailOrMatricula: string,
+  dayOfWeek: string,
+  startTime: string,
+  endTime: string,
+  courseName: string,
+  periodName: string = 'Semestre Agosto - Diciembre 2026',
+  validUntil: string = '2026-12-15'
+) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (!realUserId) {
+    console.warn(`[saveSchedule] User ${studentIdOrEmailOrMatricula} not found in database.`);
+    return;
+  }
 
   const query = `
     INSERT INTO student_schedules (student_id, day_of_week, start_time, end_time, course_name, is_academic_class, period_name, valid_until)
-    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName}', true, '${periodName}', '${validUntil}');
+    VALUES ('${realUserId}', '${dayOfWeek}', '${startTime}', '${endTime}', '${courseName.replace(/'/g, "''")}', true, '${periodName}', '${validUntil}');
   `;
   await executeSql(query);
 }
 
-// 0c. Fetch live student schedules from Neon DB for student
-export async function fetchStudentSchedulesInNeon(studentIdOrMatricula: string): Promise<TimeSlot[]> {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentIdOrMatricula}' OR matricula = '${studentIdOrMatricula}' OR email = '${studentIdOrMatricula}' LIMIT 1;`);
-  const realUserId = userRows[0]?.id;
+// 0c. Fetch live student schedules from Neon DB for student (STRICT SINGLE-STUDENT ISOLATION)
+export async function fetchStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string): Promise<TimeSlot[]> {
+  if (!studentIdOrEmailOrMatricula) return [];
 
-  const filterClause = realUserId ? `WHERE student_id = '${realUserId}'` : '';
-  const rows = await executeSql(`SELECT * FROM student_schedules ${filterClause} ORDER BY day_of_week ASC, start_time ASC;`);
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (!realUserId) return [];
 
-  if (!rows || rows.length === 0) {
-    // If no specific user filter, fallback to all student_schedules if any
-    const allRows = await executeSql(`SELECT * FROM student_schedules ORDER BY day_of_week ASC, start_time ASC;`);
-    return allRows.map((r: any, idx: number) => ({
-      id: r.id || `slot-${idx}`,
-      dayOfWeek: r.day_of_week,
-      startTime: r.start_time,
-      endTime: r.end_time,
-      courseName: r.course_name || 'Clase Académica MiTec',
-      isAcademicClass: r.is_academic_class ?? true,
-    }));
-  }
+  // Strictly query ONLY courses belonging to this exact student UUID
+  const rows = await executeSql(`SELECT * FROM student_schedules WHERE student_id = '${realUserId}' ORDER BY day_of_week ASC, start_time ASC;`);
 
   return rows.map((r: any, idx: number) => ({
     id: r.id || `slot-${idx}`,
@@ -109,10 +123,14 @@ export async function fetchStudentSchedulesInNeon(studentIdOrMatricula: string):
   }));
 }
 
-export async function clearStudentSchedulesInNeon(studentId: string) {
-  const userRows = await executeSql(`SELECT id FROM users WHERE id::text = '${studentId}' OR matricula = '${studentId}' OR email = '${studentId}' OR matricula = 'A0123456' OR email = 'prueba@tec.mx' LIMIT 1;`);
-  const realUserId = userRows[0]?.id || studentId;
-  await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
+// 0d. Clear old student schedules before uploading new schedule with Gemini IA
+export async function clearStudentSchedulesInNeon(studentIdOrEmailOrMatricula: string) {
+  const realUserId = await resolveRealUserId(studentIdOrEmailOrMatricula);
+  if (realUserId) {
+    await executeSql(`DELETE FROM student_schedules WHERE student_id = '${realUserId}';`);
+  } else if (studentIdOrEmailOrMatricula) {
+    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${studentIdOrEmailOrMatricula}';`);
+  }
 }
 
 // 1. Register student directly into Neon Postgres DB

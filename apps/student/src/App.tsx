@@ -63,7 +63,7 @@ export const App: React.FC = () => {
           const [liveRehearsals, liveSongs, liveSchedules] = await Promise.all([
             fetchStudentRehearsals(),
             fetchStudentSongs(),
-            fetchStudentSchedulesInNeon(student.matricula || student.id),
+            fetchStudentSchedulesInNeon(student.matricula || student.email || student.id),
           ]);
           setRehearsals(liveRehearsals);
           setSongs(liveSongs);
@@ -293,7 +293,13 @@ export const App: React.FC = () => {
 
         {/* TAB 3: IA HORARIO */}
         {activeTab === 'schedule-ai' && (
-          <ScheduleUploadAI studentId={student.id} currentSlots={scheduleSlots} onUpdateSlots={handleUpdateSlots} />
+          <ScheduleUploadAI
+            studentId={student.id}
+            studentMatricula={student.matricula}
+            studentEmail={student.email}
+            currentSlots={scheduleSlots}
+            onUpdateSlots={handleUpdateSlots}
+          />
         )}
 
         {/* TAB 4: PRÁCTICA */}
