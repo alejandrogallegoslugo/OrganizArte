@@ -1,27 +1,47 @@
-// Shared types and utilities for Student PWA
-export type DisciplineType = 'MUSICA' | 'CANTO' | 'BAILE' | 'TEATRO' | 'STAFF' | 'TEATRO_MUSICAL';
-
 export interface StudentProfile {
   id: string;
   name: string;
   email: string;
   matricula: string;
   campus: string;
-  role: 'STUDENT' | 'DIRECTOR' | 'SUPER_ADMIN';
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   status: 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
   companyName: string;
-  discipline: DisciplineType;
-  section: string;
+  discipline: 'MUSICA' | 'CANTO' | 'DANZA' | 'ACTUACION' | 'STAFF' | 'PRODUCCION';
+  section: string; // ej: "Trompeta", "Soprano", "Jazz", "Batería"
   createdAt: string;
 }
 
-export interface TimeSlot {
+export interface StudentSchedule {
   id: string;
+  studentId: string;
+  dayOfWeek: string; // 'LUNES', 'MARTES'...
+  startTime: string; // '07:00'
+  endTime: string;   // '09:00'
+  courseName: string;
+  isAcademicClass: boolean;
+  periodName?: string;
+  validUntil?: string;
+}
+
+export interface TimeSlot {
+  id?: string;
   day: string;
   startTime: string;
   endTime: string;
   courseName: string;
   isAcademicClass: boolean;
+  periodName?: string;
+  validUntil?: string;
+}
+
+export interface RehearsalRoom {
+  id: string;
+  name: string;
+  building: string;
+  capacity: number;
+  equipment: string[];
+  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
 }
 
 export interface RoomBooking {
@@ -43,8 +63,8 @@ export interface RehearsalEvent {
   id: string;
   title: string;
   companyName: string;
-  discipline: DisciplineType;
-  targetSections: string[];
+  discipline: string;
+  targetSections: string[]; // ej: ["Sopranos", "Trompetas"] o ["TODOS"]
   date: string;
   startTime: string;
   endTime: string;
@@ -55,15 +75,15 @@ export interface RehearsalEvent {
 
 export interface SongSheet {
   id: string;
-  instrumentOrVoice: string;
+  instrumentOrVoice: string; // ej: "Partitura General", "Trompeta 1", "Soprano 2"
   pdfUrl: string;
 }
 
-export interface SongGuide {
+export interface SongGuideAudio {
   id: string;
   title: string;
   audioUrl: string;
-  bpm: number;
+  bpm?: number;
 }
 
 export interface Song {
@@ -75,18 +95,34 @@ export interface Song {
   key: string;
   durationSeconds: number;
   sheets: SongSheet[];
-  guides: SongGuide[];
+  guides: SongGuideAudio[];
   createdAt: string;
 }
 
 export async function parseScheduleImageWithGemini(imageBase64: string) {
   try {
-    const response = await fetch('http://localhost:4000/api/gemini-ocr', {
+    const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64 })
     });
-    return await response.json();
+    if (response.ok) {
+      const data = await response.json();
+      if (data.courses && data.courses.length > 0) {
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('Cloudflare Edge /api/gemini endpoint, trying local proxy fallback:', e);
+  }
+
+  try {
+    const fallbackResponse = await fetch('http://localhost:4000/api/gemini-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64 })
+    });
+    return await fallbackResponse.json();
   } catch (e) {
     console.error('Error enviando imagen a Gemini backend proxy:', e);
     return {

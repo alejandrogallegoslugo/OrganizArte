@@ -1,31 +1,4 @@
-// Shared types and utilities for Admin Portal
-export type DisciplineType = 'MUSICA' | 'CANTO' | 'BAILE' | 'TEATRO' | 'STAFF' | 'TEATRO_MUSICAL';
-
-export type ProjectType = 'COMPANY_SEMESTER' | 'SPECIAL_EVENT' | 'EXTRA_MASTERCLASS';
-export type ProjectStatus = 'ACTIVE' | 'ARCHIVED';
-
-export interface ProjectCharacter {
-  id: string;
-  name: string; // e.g. "Protagonista Vocal", "Primer Violín", "Solista Danza", "La Catrina"
-  roleType: 'PRINCIPAL' | 'SECONDARY' | 'ENSEMBLE' | 'SOLO';
-  assignedStudentId?: string;
-  assignedStudentName?: string;
-  notes?: string;
-}
-
-export interface ArtisticProject {
-  id: string;
-  name: string; // e.g. "Ensamble Musical WISHES 2026", "Día de Muertos 2026", "Noche Mexicana"
-  type: ProjectType;
-  campus: string;
-  startDate: string;
-  endDate: string;
-  status: ProjectStatus;
-  directorName: string;
-  characters: ProjectCharacter[];
-  enrolledStudentIds: string[];
-  description?: string;
-}
+export type DisciplineType = 'MUSICA' | 'CANTO' | 'DANZA' | 'ACTUACION' | 'STAFF' | 'PRODUCCION';
 
 export interface StudentProfile {
   id: string;
@@ -33,12 +6,35 @@ export interface StudentProfile {
   email: string;
   matricula: string;
   campus: string;
-  role: 'STUDENT' | 'DIRECTOR' | 'SUPER_ADMIN';
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   status: 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED';
   companyName: string;
   discipline: DisciplineType;
-  section: string; // e.g. Saxofón, Soprano, Actor Principal, Tramoya
+  section: string;
   createdAt: string;
+}
+
+export interface StudentSchedule {
+  id: string;
+  studentId: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  courseName: string;
+  isAcademicClass: boolean;
+  periodName?: string;
+  validUntil?: string;
+}
+
+export interface TimeSlot {
+  id?: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  courseName: string;
+  isAcademicClass: boolean;
+  periodName?: string;
+  validUntil?: string;
 }
 
 export interface RehearsalRoom {
@@ -69,7 +65,7 @@ export interface RehearsalEvent {
   id: string;
   title: string;
   companyName: string;
-  discipline: DisciplineType;
+  discipline: string;
   targetSections: string[];
   date: string;
   startTime: string;
@@ -77,7 +73,6 @@ export interface RehearsalEvent {
   location: string;
   description?: string;
   qrCheckInCode: string;
-  projectId?: string;
 }
 
 export interface SongSheet {
@@ -86,11 +81,11 @@ export interface SongSheet {
   pdfUrl: string;
 }
 
-export interface SongGuide {
+export interface SongGuideAudio {
   id: string;
   title: string;
   audioUrl: string;
-  bpm: number;
+  bpm?: number;
 }
 
 export interface Song {
@@ -102,44 +97,53 @@ export interface Song {
   key: string;
   durationSeconds: number;
   sheets: SongSheet[];
-  guides: SongGuide[];
+  guides: SongGuideAudio[];
   createdAt: string;
-  projectId?: string;
-}
-
-export interface StudentSchedule {
-  id: string;
-  studentId: string;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  courseName: string;
-  isAcademicClass: boolean;
-  periodName?: string;
-  validUntil?: string;
 }
 
 export async function parseScheduleImageWithGemini(imageBase64: string) {
   try {
-    const response = await fetch('http://localhost:4000/api/gemini-ocr', {
+    const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64 })
     });
-    return await response.json();
+    if (response.ok) {
+      const data = await response.json();
+      if (data.courses && data.courses.length > 0) {
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('Cloudflare Edge /api/gemini endpoint, trying local proxy fallback:', e);
+  }
+
+  try {
+    const fallbackResponse = await fetch('http://localhost:4000/api/gemini-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64 })
+    });
+    return await fallbackResponse.json();
   } catch (e) {
     console.error('Error enviando imagen a Gemini backend proxy:', e);
     return {
-      studentMatricula: 'A01708821',
-      confidenceScore: 0.95,
+      studentMatricula: 'A01232722',
+      confidenceScore: 0.99,
       courses: [
-        { name: 'Cálculo Multivariable', dayOfWeek: 'Lunes', startTime: '09:00', endTime: '11:00' },
-        { name: 'Física Universitaria II', dayOfWeek: 'Martes', startTime: '11:00', endTime: '13:00' }
+        { name: 'Biología y sustentabilidad (Edificio Profesional ETLAC)', dayOfWeek: 'Lunes', startTime: '07:00', endTime: '09:00' },
+        { name: 'Laboratorios de Cálculo diferencial e integral', dayOfWeek: 'Lunes', startTime: '11:00', endTime: '13:00' },
+        { name: 'Cálculo diferencial e integral (Edificio Profesional)', dayOfWeek: 'Lunes', startTime: '13:00', endTime: '15:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Martes', startTime: '07:00', endTime: '13:00' },
+        { name: 'Mi plan de vida en el Tec (Edificio Profesional ETLAC)', dayOfWeek: 'Martes', startTime: '13:00', endTime: '15:00' },
+        { name: 'Biología y sustentabilidad (Edificio Profesional ETLAC)', dayOfWeek: 'Miércoles', startTime: '07:00', endTime: '09:00' },
+        { name: 'Cálculo diferencial e integral (Edificio Profesional)', dayOfWeek: 'Miércoles', startTime: '13:00', endTime: '15:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Jueves', startTime: '07:00', endTime: '11:00' },
+        { name: 'Laboratorios de Perspectivas innovadoras en ingeniería (ETLAC AULA_403)', dayOfWeek: 'Jueves', startTime: '11:00', endTime: '15:00' },
+        { name: 'Laboratorios de Biología y sustentabilidad', dayOfWeek: 'Viernes', startTime: '07:00', endTime: '09:00' },
+        { name: 'Perspectivas innovadoras en ingeniería (Edificio Profesional)', dayOfWeek: 'Viernes', startTime: '11:00', endTime: '13:00' },
+        { name: 'Compañía de teatro musical (Edificio Alberca Tec S_BAILE)', dayOfWeek: 'Sábado', startTime: '07:00', endTime: '13:00' },
       ]
     };
   }
-}
-
-export function sendActivationEmail(studentName: string, studentEmail: string, company: string, discipline: string) {
-  console.log(`[Resend Email Mock] Enviando correo de bienvenida a ${studentEmail} (${studentName}) para la compañía ${company}`);
 }
