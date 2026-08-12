@@ -28,7 +28,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   
   // Default selected student ID dynamically matching active student in DB
   const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
-    return activeStudents[0]?.id || 'bec072db-ee16-4a0a-aa2c-20293633e5d3';
+    return activeStudents[0]?.id || '';
   });
 
   // Director Validation State (persisted in localStorage so approving hides it permanently)
@@ -91,13 +91,18 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Selected Student Object
-  const selectedStudentObj = activeStudents.find(
-    (s) => s.id === selectedStudentId || s.matricula === 'A0123456' || s.name.includes('Alejandro')
-  ) || activeStudents[0];
+  // Selected Student Object (Strict match)
+  const selectedStudentObj = activeStudents.find((s) => s.id === selectedStudentId) || activeStudents[0];
 
-  // Match schedules for selected student or all active schedules if only 1 student
-  const currentStudentSchedules = schedules.length > 0 ? schedules : [];
+  // Strictly filter schedules for selected student only
+  const currentStudentSchedules = schedules.filter((sch) => {
+    if (!selectedStudentObj) return false;
+    return (
+      sch.studentId === selectedStudentObj.id ||
+      sch.studentId === selectedStudentObj.matricula ||
+      sch.studentId === selectedStudentObj.email
+    );
+  });
 
   const handleApproveScheduleValidation = () => {
     setIsScheduleApproved(true);
@@ -124,10 +129,10 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!courseName) return;
+    if (!courseName || !selectedStudentObj) return;
 
     if (onSaveScheduleCourse) {
-      await onSaveScheduleCourse(selectedStudentId || 'bec072db-ee16-4a0a-aa2c-20293633e5d3', courseDay, courseStartTime, courseEndTime, courseName);
+      await onSaveScheduleCourse(selectedStudentObj.id, courseDay, courseStartTime, courseEndTime, courseName);
     }
 
     setShowCourseModal(false);
@@ -144,19 +149,24 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   const filteredHeatmapStudents = activeStudents.filter(
     (s) => heatmapDisciplineFilter === 'ALL' || s.discipline === heatmapDisciplineFilter
   );
-  const filteredStudentIds = filteredHeatmapStudents.map((s) => s.id);
 
   const calculateAvailability = (day: string, time: string) => {
     const total = filteredHeatmapStudents.length || 1;
-    const occupied = currentStudentSchedules.filter((s) => {
-      const isStudentInFilter = heatmapDisciplineFilter === 'ALL' || filteredStudentIds.includes(s.studentId);
-      if (!isStudentInFilter) return false;
+    // Find unique students who have a class at this day and time slot
+    const busyStudentIds = new Set(
+      schedules.filter((s) => {
+        const matchingStudent = filteredHeatmapStudents.find(
+          (st) => st.id === s.studentId || st.matricula === s.studentId || st.email === s.studentId
+        );
+        if (!matchingStudent) return false;
 
-      const sStart = s.startTime.substring(0, 5);
-      const sEnd = s.endTime.substring(0, 5);
-      return s.dayOfWeek === day && sStart <= time && sEnd > time;
-    }).length;
+        const sStart = s.startTime.substring(0, 5);
+        const sEnd = s.endTime.substring(0, 5);
+        return s.dayOfWeek.toUpperCase() === day.toUpperCase() && sStart <= time && sEnd > time;
+      }).map((s) => s.studentId)
+    );
 
+    const occupied = busyStudentIds.size;
     const available = Math.max(0, total - occupied);
     const percentage = Math.round((available / total) * 100);
     return { available, total, percentage };
@@ -176,249 +186,188 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Banner Header (Simplified) */}
+      {/* Banner Header */}
       <div className="mitec-card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff' }}>
-        <h2 style={{ fontSize: '1.4rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Sparkles style={{ color: '#0033a0', width: '24px', height: '24px' }} /> Horarios
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #0033a0 0%, #001a5e 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff'
+          }}>
+            <CalendarClock style={{ width: '24px', height: '24px' }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '1.3rem', color: '#0f172a', fontWeight: 800 }}>Horarios</h2>
+          </div>
+        </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn-secondary" onClick={() => setActiveSubTab(activeSubTab === 'heatmap' ? 'inspector' : 'heatmap')}>
-            {activeSubTab === 'heatmap' ? '📚 Inspector de Clases' : '🗺️ Mapa de Calor'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            className="btn-secondary"
+            onClick={() => setActiveSubTab(activeSubTab === 'heatmap' ? 'inspector' : 'heatmap')}
+            style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+          >
+            <BookOpen style={{ width: '16px', height: '16px' }} />
+            {activeSubTab === 'heatmap' ? 'Inspector de Clases' : 'Ver Mapa de Calor'}
           </button>
-          <button className="btn-primary" onClick={() => setShowUploadModal(true)}>
-            <Upload style={{ width: '18px', height: '18px' }} /> Cargar Horario
+
+          <button
+            className="btn-primary"
+            onClick={() => setShowUploadModal(true)}
+            style={{ fontSize: '0.82rem', padding: '8px 14px' }}
+          >
+            <Upload style={{ width: '16px', height: '16px' }} /> Cargar Horario
           </button>
         </div>
       </div>
 
-      {/* Director Schedule Validation Alert Banner - Hides permanently upon approval */}
+      {/* Validation Banner if unapproved */}
       {!isScheduleApproved && (
-        <div className="glass-panel" style={{ padding: '20px 24px', borderLeft: '4px solid var(--accent-amber)', background: 'rgba(217, 119, 6, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(217, 119, 6, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-amber)' }}>
-              <ShieldAlert style={{ width: '24px', height: '24px' }} />
-            </div>
+        <div className="mitec-card" style={{ borderLeft: '5px solid #d97706', background: '#fffbeb', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertCircle style={{ width: '22px', height: '22px', color: '#d97706' }} />
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--accent-amber)', fontWeight: 800, textTransform: 'uppercase' }}>
-                🔔 Validación de Horario Pendiente
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#d97706', textTransform: 'uppercase' }}>
+                ⚠️ VALIDACIÓN DE HORARIO PENDIENTE
               </div>
-              <h4 style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1rem' }}>
-                El alumno {selectedStudentObj?.name || 'Alejandro Prueba'} ({selectedStudentObj?.matricula || 'A0123456'}) subió su horario MiTec con IA
-              </h4>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Se han extraído <strong>{currentStudentSchedules.length} materias reales</strong> de MiTec. Valida el comprobante para habilitar su disponibilidad en la matriz de ensayos.
-              </p>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#92400e' }}>
+                El alumno {selectedStudentObj?.name || 'Ale G'} subió su horario MiTec con IA
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#b45309' }}>
+                Se han extraído materias reales de MiTec. Valida el comprobante para habilitar su disponibilidad en la matriz de ensayos.
+              </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={() => setActiveSubTab('inspector')}
-              className="btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '8px 14px' }}
-            >
+            <button className="btn-secondary" onClick={() => setActiveSubTab('inspector')} style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
               <Eye style={{ width: '14px', height: '14px' }} /> Revisar Materias ({currentStudentSchedules.length})
             </button>
-            <button
-              onClick={handleApproveScheduleValidation}
-              className="btn-emerald"
-              style={{ fontSize: '0.8rem', padding: '8px 14px' }}
-            >
+            <button className="btn-primary" onClick={handleApproveScheduleValidation} style={{ fontSize: '0.78rem', padding: '6px 12px', background: '#059669' }}>
               <CheckCircle style={{ width: '14px', height: '14px' }} /> Validar & Aprobar Horario
             </button>
           </div>
         </div>
       )}
 
-      {/* OCR Result Box if triggered */}
-      {ocrResult && (
-        <div className="glass-panel" style={{ padding: '20px', borderLeft: '4px solid var(--primary)', background: 'rgba(2, 132, 199, 0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h4 style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 style={{ width: '18px', height: '18px' }} /> Horario Leído Exitosamente por Gemini AI
-            </h4>
-            <span style={{ fontSize: '0.75rem', background: 'rgba(2, 132, 199, 0.1)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-              Confianza: {Math.round((ocrResult.confidenceScore || 0.98) * 100)}%
-            </span>
-          </div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '10px' }}>
-            Matrícula: <strong>{ocrResult.studentMatricula || 'A01708821'}</strong> | Clases detectadas: <strong>{ocrResult.courses?.length || 0}</strong>
-          </p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {ocrResult.courses?.map((c: any, i: number) => (
-              <span key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-main)' }}>
-                📖 {c.name} ({c.dayOfWeek} {c.startTime}-{c.endTime})
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Sub-Tab Navigation Bar */}
-      <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+      {/* SubTab Navigation */}
+      <div style={{ display: 'flex', gap: '10px' }}>
         <button
           onClick={() => setActiveSubTab('heatmap')}
           style={{
-            background: activeSubTab === 'heatmap' ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
-            border: 'none',
-            color: activeSubTab === 'heatmap' ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 700,
             padding: '8px 16px',
             borderRadius: '8px',
+            border: 'none',
+            fontSize: '0.82rem',
+            fontWeight: 800,
             cursor: 'pointer',
-            fontSize: '0.85rem',
+            background: activeSubTab === 'heatmap' ? '#0033a0' : '#ffffff',
+            color: activeSubTab === 'heatmap' ? '#ffffff' : '#64748b',
+            boxShadow: activeSubTab === 'heatmap' ? '0 2px 8px rgba(0,51,160,0.2)' : 'none',
+            border: '1px solid #e2e8f0',
           }}
         >
           🗺️ Mapa de Calor de Disponibilidad
         </button>
+
         <button
           onClick={() => setActiveSubTab('inspector')}
           style={{
-            background: activeSubTab === 'inspector' ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
-            border: 'none',
-            color: activeSubTab === 'inspector' ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 700,
             padding: '8px 16px',
             borderRadius: '8px',
+            border: 'none',
+            fontSize: '0.82rem',
+            fontWeight: 800,
             cursor: 'pointer',
-            fontSize: '0.85rem',
+            background: activeSubTab === 'inspector' ? '#0033a0' : '#ffffff',
+            color: activeSubTab === 'inspector' ? '#ffffff' : '#64748b',
+            boxShadow: activeSubTab === 'inspector' ? '0 2px 8px rgba(0,51,160,0.2)' : 'none',
+            border: '1px solid #e2e8f0',
           }}
         >
-          📚 Inspector & Editor de Horarios de Alumno ({currentStudentSchedules.length} Clases)
+          📑 Inspector & Editor de Horarios de Alumno ({currentStudentSchedules.length} Clases)
         </button>
       </div>
 
-      {/* VIEW 1: Heatmap Grid */}
+      {/* VIEW 1: Availability Heatmap */}
       {activeSubTab === 'heatmap' && (
-        <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 800 }}>
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
               Mapa de Calor de Ensayos ({filteredHeatmapStudents.length} Alumnos)
             </h3>
-            
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(5, 150, 105, 0.3)' }}></span> Excelente (&gt;80% Libres)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(217, 119, 6, 0.3)' }}></span> Regular (50-80% Libres)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(225, 29, 72, 0.3)' }}></span> Ocupado (&lt;50% Libres)
-              </span>
+
+            {/* Discipline Filter */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => setHeatmapDisciplineFilter('ALL')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  background: heatmapDisciplineFilter === 'ALL' ? '#0033a0' : '#f1f5f9',
+                  color: heatmapDisciplineFilter === 'ALL' ? '#ffffff' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                Todos ({activeStudents.length})
+              </button>
+
+              <button
+                onClick={() => setHeatmapDisciplineFilter('MUSICA')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  background: heatmapDisciplineFilter === 'MUSICA' ? '#0033a0' : '#f1f5f9',
+                  color: heatmapDisciplineFilter === 'MUSICA' ? '#ffffff' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                🎺 Músicos ({activeStudents.filter((s) => s.discipline === 'MUSICA').length})
+              </button>
+
+              <button
+                onClick={() => setHeatmapDisciplineFilter('CANTO')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  background: heatmapDisciplineFilter === 'CANTO' ? '#0033a0' : '#f1f5f9',
+                  color: heatmapDisciplineFilter === 'CANTO' ? '#ffffff' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                🎤 Cantantes ({activeStudents.filter((s) => s.discipline === 'CANTO').length})
+              </button>
+
+              <button
+                onClick={() => setHeatmapDisciplineFilter('DANZA')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  background: heatmapDisciplineFilter === 'DANZA' ? '#0033a0' : '#f1f5f9',
+                  color: heatmapDisciplineFilter === 'DANZA' ? '#ffffff' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                💃 Bailarines / Danza ({activeStudents.filter((s) => s.discipline === 'DANZA').length})
+              </button>
             </div>
-          </div>
-
-          {/* Area / Discipline Filter Selector */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', background: '#f8fafc', padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0033a0', display: 'flex', alignItems: 'center', gap: '6px', marginRight: '6px' }}>
-              <Filter style={{ width: '16px', height: '16px' }} /> Filtrar por Área:
-            </span>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('ALL')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'ALL' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'ALL' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                boxShadow: heatmapDisciplineFilter === 'ALL' ? '0 2px 8px rgba(0,51,160,0.2)' : 'none',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              🌐 Todos ({activeStudents.length})
-            </button>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('MUSICA')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'MUSICA' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'MUSICA' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              🎺 Músicos ({activeStudents.filter((s) => s.discipline === 'MUSICA').length})
-            </button>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('CANTO')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'CANTO' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'CANTO' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              🎤 Cantantes ({activeStudents.filter((s) => s.discipline === 'CANTO').length})
-            </button>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('BAILE')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'BAILE' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'BAILE' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              💃 Bailarines / Danza ({activeStudents.filter((s) => s.discipline === 'BAILE').length})
-            </button>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('TEATRO')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'TEATRO' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'TEATRO' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              🎭 Teatro / Actores ({activeStudents.filter((s) => s.discipline === 'TEATRO').length})
-            </button>
-
-            <button
-              onClick={() => setHeatmapDisciplineFilter('STAFF')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: heatmapDisciplineFilter === 'STAFF' ? '#0033a0' : '#ffffff',
-                color: heatmapDisciplineFilter === 'STAFF' ? '#ffffff' : '#334155',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              🛠️ Staff / Producción ({activeStudents.filter((s) => s.discipline === 'STAFF').length})
-            </button>
           </div>
 
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '4px' }}>
@@ -552,16 +501,16 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button
+                          className="btn-secondary"
                           onClick={() => handleOpenEditCourse(course)}
-                          style={{ background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.3)', color: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700 }}
-                          title="Editar Materia"
+                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                         >
                           <Edit2 style={{ width: '12px', height: '12px' }} /> Editar
                         </button>
                         <button
+                          className="btn-secondary"
                           onClick={() => handleDeleteCourse(course.id)}
-                          style={{ background: 'rgba(225, 29, 72, 0.1)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700 }}
-                          title="Borrar Materia"
+                          style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#f43f5e' }}
                         >
                           <Trash2 style={{ width: '12px', height: '12px' }} /> Borrar
                         </button>
@@ -575,94 +524,37 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* Upload Schedule Modal for Teachers */}
-      {showUploadModal && (
-        <div className="modal-backdrop">
-          <div className="glass-panel" style={{ width: '480px', padding: '28px', background: 'var(--bg-card)' }}>
-            <h3 style={{ fontSize: '1.25rem', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Upload style={{ color: 'var(--primary)' }} /> Cargar Horario de Alumno (Profesor / Admin)
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-              Selecciona el integrante de tu lista y sube su captura o PDF de MiTec.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Seleccionar Integrante</label>
-                <select
-                  value={selectedStudentId}
-                  onChange={(e) => setSelectedStudentId(e.target.value)}
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
-                >
-                  {activeStudents.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.matricula}) - {s.section}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Captura o PDF de Horario MiTec</label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) setSelectedFile(f);
-                  }}
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button className="btn-secondary" onClick={() => setShowUploadModal(false)}>Cancelar</button>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => {
-                    if (selectedFile) processSelectedFile(selectedFile);
-                  }}
-                  disabled={ocrLoading || !selectedFile}
-                >
-                  <Sparkles style={{ width: '16px', height: '16px' }} /> {ocrLoading ? 'Procesando IA...' : 'Procesar con IA Gemini'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Add or Edit Manual Course */}
+      {/* Manual Course Add/Edit Modal */}
       {showCourseModal && (
-        <div className="modal-backdrop">
-          <form onSubmit={handleSaveCourse} className="glass-panel" style={{ width: '460px', padding: '28px', background: 'var(--bg-card)' }}>
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen style={{ color: 'var(--primary)' }} /> {editingCourse ? 'Editar Materia Académica' : 'Agregar Materia Manual'}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', maxWidth: '420px', width: '100%', border: '1px solid #cbd5e1' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+              {editingCourse ? 'Editar Materia Académica' : 'Agregar Materia Manual'}
             </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-              Modifica la clase académica para el alumno <strong>{selectedStudentObj?.name}</strong>.
-            </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form onSubmit={handleSaveCourse} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nombre de la Materia</label>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                  Nombre de la Materia
+                </label>
                 <input
                   type="text"
-                  required
                   value={courseName}
                   onChange={(e) => setCourseName(e.target.value)}
-                  placeholder="Ej: Cálculo Multivariable, Física Universitaria II"
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
+                  placeholder="Ej. Cálculo Diferencial (Edificio Profesional)"
+                  required
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Día de la Semana</label>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                  Día de la Semana
+                </label>
                 <select
                   value={courseDay}
                   onChange={(e) => setCourseDay(e.target.value)}
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
                 >
                   {DAYS.map((d) => (
                     <option key={d} value={d}>{d}</option>
@@ -670,42 +562,41 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Hora Inicio</label>
-                  <select
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    Hora Inicio
+                  </label>
+                  <input
+                    type="time"
                     value={courseStartTime}
                     onChange={(e) => setCourseStartTime(e.target.value)}
-                    style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
-                  >
-                    {TIME_SLOTS.map((t) => (
-                      <option key={t} value={t}>{t} hs</option>
-                    ))}
-                  </select>
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
                 </div>
-
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Hora Fin</label>
-                  <select
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                    Hora Fin
+                  </label>
+                  <input
+                    type="time"
                     value={courseEndTime}
                     onChange={(e) => setCourseEndTime(e.target.value)}
-                    style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
-                  >
-                    {TIME_SLOTS.map((t) => (
-                      <option key={t} value={t}>{t} hs</option>
-                    ))}
-                  </select>
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowCourseModal(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary">
-                  <Save style={{ width: '16px', height: '16px' }} /> Guardar Materia
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                  Guardar Clase
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setShowCourseModal(false)}>
+                  Cancelar
                 </button>
               </div>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
     </div>
