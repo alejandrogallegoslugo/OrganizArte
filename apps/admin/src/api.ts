@@ -211,6 +211,19 @@ export async function rejectStudentInNeon(studentId: string) {
 
 // 3b. Fetch & Save Real Student Schedules in Neon DB
 export async function fetchLiveSchedules(): Promise<StudentSchedule[]> {
+  // Migration: Automatically resolve any legacy matricula or email references to permanent users.id UUIDs
+  try {
+    await executeSql(`
+      UPDATE student_schedules ss
+      SET student_id = u.id::text
+      FROM users u
+      WHERE (ss.student_id = u.matricula OR ss.student_id = u.email)
+        AND ss.student_id != u.id::text;
+    `);
+  } catch (e) {
+    console.warn('Schedule UUID migration notice:', e);
+  }
+
   const rows = await executeSql('SELECT * FROM student_schedules ORDER BY day_of_week ASC');
   return rows.map((r: any) => ({
     id: r.id,
