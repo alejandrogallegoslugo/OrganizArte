@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square, RefreshCw } from 'lucide-react';
+import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
 interface AvailabilityHeatmapProps {
@@ -12,10 +12,19 @@ interface AvailabilityHeatmapProps {
 }
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const TIME_SLOTS = [
+
+const HOURLY_SLOTS = [
   '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
   '19:00', '20:00', '21:00'
+];
+
+const HALF_HOURLY_SLOTS = [
+  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+  '19:00', '19:30', '20:00', '20:30', '21:00'
 ];
 
 export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
@@ -32,6 +41,9 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
     return activeStudents[0]?.id || '';
   });
+
+  // Time Granularity State: 1 Hour vs 30 Minutes
+  const [timeGranularity, setTimeGranularity] = useState<'HOURLY' | 'HALF_HOURLY'>('HOURLY');
 
   // Director Validation State (persisted in localStorage so approving hides it permanently)
   const [isScheduleApproved, setIsScheduleApproved] = useState<boolean>(() => {
@@ -64,6 +76,8 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     if (!selectedStudentObj) return false;
     return sch.studentId === selectedStudentObj.id;
   });
+
+  const activeTimeSlots = timeGranularity === 'HOURLY' ? HOURLY_SLOTS : HALF_HOURLY_SLOTS;
 
   const handleApproveScheduleValidation = () => {
     setIsScheduleApproved(true);
@@ -111,7 +125,13 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     if (!courseName || !selectedStudentObj) return;
 
     if (onSaveScheduleCourse) {
-      // Loop over all selected days for bulk creation
+      if (editingCourse) {
+        // Delete previous course row if editing
+        if (onDeleteScheduleCourse) {
+          await onDeleteScheduleCourse(editingCourse.id);
+        }
+      }
+      // Loop over all selected days for bulk or single creation
       for (const day of selectedDays) {
         await onSaveScheduleCourse(selectedStudentObj.id, day, courseStartTime, courseEndTime, courseName, periodName, validUntil);
       }
@@ -277,76 +297,114 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       {/* VIEW 1: Availability Heatmap */}
       {activeSubTab === 'heatmap' && (
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <h3 style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
               Mapa de Calor de Ensayos ({filteredHeatmapStudents.length} Alumnos)
             </h3>
 
-            {/* Discipline Filter */}
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button
-                onClick={() => setHeatmapDisciplineFilter('ALL')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  background: heatmapDisciplineFilter === 'ALL' ? '#0033a0' : '#f1f5f9',
-                  color: heatmapDisciplineFilter === 'ALL' ? '#ffffff' : '#64748b',
-                  cursor: 'pointer',
-                }}
-              >
-                Todos ({activeStudents.length})
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Sensibilidad / Granularidad de Tiempo Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <button
+                  onClick={() => setTimeGranularity('HOURLY')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    background: timeGranularity === 'HOURLY' ? '#ffffff' : 'transparent',
+                    color: timeGranularity === 'HOURLY' ? '#0033a0' : '#64748b',
+                    boxShadow: timeGranularity === 'HOURLY' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  ⏰ Cada 1 Hora
+                </button>
+                <button
+                  onClick={() => setTimeGranularity('HALF_HOURLY')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    background: timeGranularity === 'HALF_HOURLY' ? '#ffffff' : 'transparent',
+                    color: timeGranularity === 'HALF_HOURLY' ? '#0033a0' : '#64748b',
+                    boxShadow: timeGranularity === 'HALF_HOURLY' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  ⏱️ Cada 30 Minutos
+                </button>
+              </div>
 
-              <button
-                onClick={() => setHeatmapDisciplineFilter('MUSICA')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  background: heatmapDisciplineFilter === 'MUSICA' ? '#0033a0' : '#f1f5f9',
-                  color: heatmapDisciplineFilter === 'MUSICA' ? '#ffffff' : '#64748b',
-                  cursor: 'pointer',
-                }}
-              >
-                🎺 Músicos ({activeStudents.filter((s) => s.discipline === 'MUSICA').length})
-              </button>
+              {/* Discipline Filter */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => setHeatmapDisciplineFilter('ALL')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    background: heatmapDisciplineFilter === 'ALL' ? '#0033a0' : '#f1f5f9',
+                    color: heatmapDisciplineFilter === 'ALL' ? '#ffffff' : '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Todos ({activeStudents.length})
+                </button>
 
-              <button
-                onClick={() => setHeatmapDisciplineFilter('CANTO')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  background: heatmapDisciplineFilter === 'CANTO' ? '#0033a0' : '#f1f5f9',
-                  color: heatmapDisciplineFilter === 'CANTO' ? '#ffffff' : '#64748b',
-                  cursor: 'pointer',
-                }}
-              >
-                🎤 Cantantes ({activeStudents.filter((s) => s.discipline === 'CANTO').length})
-              </button>
+                <button
+                  onClick={() => setHeatmapDisciplineFilter('MUSICA')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    background: heatmapDisciplineFilter === 'MUSICA' ? '#0033a0' : '#f1f5f9',
+                    color: heatmapDisciplineFilter === 'MUSICA' ? '#ffffff' : '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🎺 Músicos ({activeStudents.filter((s) => s.discipline === 'MUSICA').length})
+                </button>
 
-              <button
-                onClick={() => setHeatmapDisciplineFilter('DANZA')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  background: heatmapDisciplineFilter === 'DANZA' ? '#0033a0' : '#f1f5f9',
-                  color: heatmapDisciplineFilter === 'DANZA' ? '#ffffff' : '#64748b',
-                  cursor: 'pointer',
-                }}
-              >
-                💃 Bailarines / Danza ({activeStudents.filter((s) => s.discipline === 'DANZA').length})
-              </button>
+                <button
+                  onClick={() => setHeatmapDisciplineFilter('CANTO')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    background: heatmapDisciplineFilter === 'CANTO' ? '#0033a0' : '#f1f5f9',
+                    color: heatmapDisciplineFilter === 'CANTO' ? '#ffffff' : '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🎤 Cantantes ({activeStudents.filter((s) => s.discipline === 'CANTO').length})
+                </button>
+
+                <button
+                  onClick={() => setHeatmapDisciplineFilter('DANZA')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    background: heatmapDisciplineFilter === 'DANZA' ? '#0033a0' : '#f1f5f9',
+                    color: heatmapDisciplineFilter === 'DANZA' ? '#ffffff' : '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  💃 Bailarines / Danza ({activeStudents.filter((s) => s.discipline === 'DANZA').length})
+                </button>
+              </div>
             </div>
           </div>
 
@@ -362,9 +420,9 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               </tr>
             </thead>
             <tbody>
-              {TIME_SLOTS.map((time) => (
+              {activeTimeSlots.map((time) => (
                 <tr key={time}>
-                  <td style={{ padding: '6px 12px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, width: '80px' }}>
+                  <td style={{ padding: '6px 12px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, width: '85px' }}>
                     {time} hs
                   </td>
                   {DAYS.map((day) => {
@@ -407,7 +465,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               <BookOpen style={{ color: 'var(--primary)' }} />
               <div>
                 <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 800 }}>Inspector de Clases por Alumno</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Revisa, resetea y modifica las materias individuales cargadas por cada alumno.</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Revisa, resetea y modifica la fecha de vencimiento y materias de cada alumno.</p>
               </div>
             </div>
 
@@ -540,7 +598,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', border: '1px solid #cbd5e1' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
-              {editingCourse ? 'Editar Clase / Bloqueo' : '⚡ Cargar Bloqueo o Materias Masivas'}
+              {editingCourse ? 'Editar Clase / Modificar Fecha de Vencimiento' : '⚡ Cargar Bloqueo o Materias Masivas'}
             </h3>
 
             <form onSubmit={handleSaveCourse} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -658,7 +716,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  ⚡ Guardar en ({selectedDays.length}) Días
+                  ⚡ Guardar Cambios ({selectedDays.length} Días)
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => setShowCourseModal(false)}>
                   Cancelar
