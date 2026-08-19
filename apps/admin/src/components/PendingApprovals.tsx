@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, CheckCircle, XCircle, Mail, Sparkles, UserPlus, Clock, Trash2, Users, AlertCircle } from 'lucide-react';
+import { UserCheck, CheckCircle2, XCircle, Mail, Sparkles, UserPlus, Clock, Trash2, Users, AlertCircle, X, ShieldCheck } from 'lucide-react';
 import { StudentProfile, DisciplineType } from '../shared';
 import { AdminCreateStudentModal } from './AdminCreateStudentModal';
 
@@ -18,7 +18,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
   onDeleteStudent,
   onAddDirectStudent,
 }) => {
-  const [subTab, setSubTab] = useState<'pending' | 'all'>('all');
+  const [subTab, setSubTab] = useState<'pending' | 'all'>('pending');
 
   const pendingStudents = students.filter((s) => s.status === 'PENDING_APPROVAL');
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
@@ -36,7 +36,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
     setSelectedStudent(student);
     setAssignedCompany(student.companyName || 'Ensamble Musical Tec');
     setAssignedDiscipline(student.discipline || 'MUSICA');
-    setAssignedSection(student.section || 'Saxofón Alto');
+    setAssignedSection(student.section || 'General');
   };
 
   const handleConfirmApproval = () => {
@@ -47,7 +47,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
   };
 
   const handleDeleteConfirm = (studentId: string, studentName: string) => {
-    if (confirm(`¿Estás seguro de eliminar permanentemente al alumno "${studentName}" de la base de datos? Esta acción no se puede deshacer.`)) {
+    if (confirm(`¿Estás seguro de eliminar permanentemente al alumno "${studentName}" de la base de datos?`)) {
       if (onDeleteStudent) {
         onDeleteStudent(studentId);
       }
@@ -55,106 +55,131 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px' }}>
+      {/* Top Header Card */}
+      <div className="executive-card" style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <UserCheck style={{ color: 'var(--accent-amber)', width: '20px', height: '20px' }} />
-            <span style={{ color: 'var(--accent-amber)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              Control de Accesos & Gestión de Integrantes
+            <span className="badge badge-amber">CONTROL DE INTEGRANTES</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              {pendingStudents.length} Solicitudes por Validar
             </span>
           </div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Aprobación y Directorio de Alumnos</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Aprueba registros pendientes, administra el directorio activo o elimina integrantes de prueba.
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
+            Aprobación y Directorio de Alumnos
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+            Valida las solicitudes de registro para habilitar el acceso a la App de Alumnos PWA o administra los integrantes activos.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
-            <UserPlus style={{ width: '18px', height: '18px' }} /> Alta Directa + Horario IA
-          </button>
-        </div>
+        <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+          <UserPlus style={{ width: '18px', height: '18px' }} />
+          <span>Alta Directa + Horario IA</span>
+        </button>
       </div>
 
       {/* Sub-Tab Navigation Bar */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-        <button
-          onClick={() => setSubTab('all')}
-          style={{
-            background: subTab === 'all' ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
-            border: 'none',
-            color: subTab === 'all' ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 700,
-            padding: '10px 18px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <Users style={{ width: '16px', height: '16px' }} /> Todos los Alumnos ({students.length})
-        </button>
-
+      <div style={{ display: 'flex', gap: '10px' }}>
         <button
           onClick={() => setSubTab('pending')}
           style={{
-            background: subTab === 'pending' ? 'rgba(217, 119, 6, 0.15)' : 'transparent',
-            border: 'none',
-            color: subTab === 'pending' ? 'var(--accent-amber)' : 'var(--text-muted)',
-            fontWeight: 700,
-            padding: '10px 18px',
-            borderRadius: '8px',
+            background: subTab === 'pending' ? 'var(--primary-light)' : 'var(--bg-card)',
+            border: subTab === 'pending' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+            color: subTab === 'pending' ? 'var(--primary)' : 'var(--text-muted)',
+            fontWeight: 800,
+            padding: '10px 20px',
+            borderRadius: '12px',
             cursor: 'pointer',
             fontSize: '0.85rem',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            boxShadow: subTab === 'pending' ? 'var(--shadow-sm)' : 'none',
           }}
         >
-          <Clock style={{ width: '16px', height: '16px' }} /> Solicitudes Pendientes ({pendingStudents.length})
+          <Clock style={{ width: '16px', height: '16px' }} />
+          <span>Solicitudes Pendientes ({pendingStudents.length})</span>
+          {pendingStudents.length > 0 && (
+            <span style={{
+              background: 'var(--rose-accent)',
+              color: '#ffffff',
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              padding: '2px 7px',
+              borderRadius: '999px',
+            }}>
+              {pendingStudents.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setSubTab('all')}
+          style={{
+            background: subTab === 'all' ? 'var(--primary-light)' : 'var(--bg-card)',
+            border: subTab === 'all' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+            color: subTab === 'all' ? 'var(--primary)' : 'var(--text-muted)',
+            fontWeight: 800,
+            padding: '10px 20px',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: subTab === 'all' ? 'var(--shadow-sm)' : 'none',
+          }}
+        >
+          <Users style={{ width: '16px', height: '16px' }} />
+          <span>Todos los Alumnos ({students.length})</span>
         </button>
       </div>
 
       {/* Main Table */}
-      <div className="glass-panel" style={{ padding: '24px' }}>
+      <div className="executive-card" style={{ padding: '24px', overflowX: 'auto' }}>
         {displayedStudents.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-muted)' }}>
-            <CheckCircle style={{ width: '48px', height: '48px', color: 'var(--accent-emerald)', margin: '0 auto 12px auto', display: 'block' }} />
-            <h3 style={{ color: 'var(--text-main)', marginBottom: '4px' }}>No hay registros en esta sección</h3>
-            <p style={{ fontSize: '0.9rem' }}>Todos los integrantes están al día.</p>
+            <CheckCircle2 style={{ width: '48px', height: '48px', color: 'var(--emerald-accent)', margin: '0 auto 12px auto', display: 'block' }} />
+            <h3 style={{ color: 'var(--text-main)', marginBottom: '4px', fontSize: '1.15rem', fontWeight: 800 }}>
+              {subTab === 'pending' ? '¡No hay solicitudes pendientes!' : 'No hay alumnos registrados'}
+            </h3>
+            <p style={{ fontSize: '0.85rem' }}>
+              {subTab === 'pending' ? 'Todos los alumnos registrados han sido aprobados y cuentan con acceso a la app.' : 'Comienza dando de alta un alumno o invitándolos a registrarse en la PWA.'}
+            </p>
           </div>
         ) : (
-          <table className="custom-table">
+          <table className="custom-table" style={{ width: '100%', minWidth: '760px' }}>
             <thead>
               <tr>
-                <th>Alumno / Correo</th>
-                <th>Matrícula</th>
-                <th>Compañía / Elenco</th>
-                <th>Disciplina / Sección</th>
-                <th>Estatus</th>
-                <th>Acciones</th>
+                <th>ALUMNO / CORREO</th>
+                <th>MATRÍCULA</th>
+                <th>COMPAÑÍA / ELENCO</th>
+                <th>DISCIPLINA / SECCIÓN</th>
+                <th>ESTATUS</th>
+                <th style={{ textAlign: 'right' }}>ACCIONES DE VALIDACIÓN</th>
               </tr>
             </thead>
             <tbody>
               {displayedStudents.map((student) => (
                 <tr key={student.id}>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{student.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.9rem' }}>{student.name}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                       <Mail style={{ width: '12px', height: '12px' }} /> {student.email}
                     </div>
                   </td>
                   <td>
-                    <span style={{ fontFamily: 'monospace', color: 'var(--accent-amber)', fontWeight: 700 }}>{student.matricula}</span>
+                    <span style={{ fontFamily: 'monospace', color: 'var(--amber-accent)', fontWeight: 800, fontSize: '0.88rem' }}>
+                      {student.matricula}
+                    </span>
                   </td>
-                  <td style={{ color: 'var(--text-main)' }}>{student.companyName}</td>
+                  <td style={{ fontWeight: 600 }}>{student.companyName}</td>
                   <td>
                     <span className="badge badge-purple">{student.discipline}</span>
-                    <span style={{ marginLeft: '6px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{student.section}</span>
+                    <span style={{ marginLeft: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                      {student.section}
+                    </span>
                   </td>
                   <td>
                     {student.status === 'ACTIVE' ? (
@@ -165,37 +190,51 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
                       <span className="badge badge-rose">🔴 RECHAZADO</span>
                     )}
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                       {student.status === 'PENDING_APPROVAL' && (
                         <>
                           <button className="btn-success" onClick={() => handleOpenApproveModal(student)}>
-                            <CheckCircle style={{ width: '14px', height: '14px' }} /> Aprobar
+                            <CheckCircle2 style={{ width: '15px', height: '15px' }} />
+                            <span>Aprobar & Activar</span>
                           </button>
                           <button className="btn-danger" onClick={() => onRejectStudent(student.id)}>
-                            <XCircle style={{ width: '14px', height: '14px' }} /> Rechazar
+                            <XCircle style={{ width: '15px', height: '15px' }} />
+                            <span>Rechazar</span>
                           </button>
                         </>
                       )}
-                      
+
+                      {student.status === 'ACTIVE' && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => handleOpenApproveModal(student)}
+                          style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                          title="Modificar asignación de elenco o disciplina"
+                        >
+                          <span>Reasignar Rol</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => handleDeleteConfirm(student.id, student.name)}
                         style={{
-                          background: 'rgba(225, 29, 72, 0.1)',
-                          border: '1px solid rgba(225, 29, 72, 0.3)',
-                          color: 'var(--accent-rose)',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
+                          background: 'rgba(244, 63, 94, 0.08)',
+                          border: '1px solid rgba(244, 63, 94, 0.2)',
+                          color: 'var(--rose-accent)',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          fontSize: '0.75rem',
+                          fontSize: '0.78rem',
                           fontWeight: 700,
                         }}
                         title="Eliminar Alumno"
                       >
-                        <Trash2 style={{ width: '14px', height: '14px' }} /> Eliminar
+                        <Trash2 style={{ width: '14px', height: '14px' }} />
+                        <span>Eliminar</span>
                       </button>
                     </div>
                   </td>
@@ -221,58 +260,77 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
       {/* Approve & Assign Modal */}
       {selectedStudent && (
         <div className="modal-backdrop">
-          <div className="glass-panel" style={{ width: '500px', padding: '28px', background: 'var(--bg-card)' }}>
-            <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles style={{ color: 'var(--primary)' }} /> Activar Alumno y Asignar Rol
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Confirmas los datos de <strong>{selectedStudent.name}</strong> ({selectedStudent.matricula}) para darle acceso a la PWA.
+          <div className="executive-card" style={{ width: '100%', maxWidth: '520px', padding: '32px', background: 'var(--bg-surface)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck style={{ color: 'var(--emerald-accent)', width: 22, height: 22 }} />
+                <span>Activar Alumno y Asignar Rol</span>
+              </h3>
+              <button onClick={() => setSelectedStudent(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X style={{ width: 20, height: 20 }} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
+              Confirmas los datos de asignación para <strong style={{ color: 'var(--text-main)' }}>{selectedStudent.name}</strong> ({selectedStudent.matricula}) para habilitar su acceso oficial a la App de Alumnos PWA.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Compañía / Elenco</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                  COMPAÑÍA / ELENCO ARTÍSTICO
+                </label>
                 <select 
                   value={assignedCompany} 
                   onChange={(e) => setAssignedCompany(e.target.value)}
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
+                  style={{ width: '100%', padding: '12px 14px' }}
                 >
-                  <option value="Ensamble Musical Tec">Ensamble Musical Tec</option>
-                  <option value="Comedia Musical 2026">Comedia Musical 2026</option>
-                  <option value="Grupo de Baile Urbano">Grupo de Baile Urbano</option>
+                  <option value="Ensamble Musical Tec">🎵 Ensamble Musical Tec</option>
+                  <option value="Comedia Musical 2026">🎭 Comedia Musical 2026</option>
+                  <option value="Grupo de Baile Urbano">💃 Grupo de Baile Urbano</option>
+                  <option value="Compañía de Canto Vocal">🎤 Compañía de Canto Vocal</option>
+                  <option value="Compañía de Teatro">🎬 Compañía de Teatro</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Disciplina Artística</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                  DISCIPLINA ARTÍSTICA
+                </label>
                 <select 
                   value={assignedDiscipline} 
                   onChange={(e) => setAssignedDiscipline(e.target.value as DisciplineType)}
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
+                  style={{ width: '100%', padding: '12px 14px' }}
                 >
-                  <option value="MUSICA">Música / Instrumento</option>
-                  <option value="CANTO">Canto / Vocal</option>
-                  <option value="BAILE">Danza / Baile</option>
-                  <option value="TEATRO">Teatro / Actuación</option>
-                  <option value="STAFF">Staff / Producción</option>
+                  <option value="MUSICA">🎺 Música / Instrumento</option>
+                  <option value="CANTO">🎤 Canto / Vocal</option>
+                  <option value="DANZA">💃 Danza / Baile</option>
+                  <option value="ACTUACION">🎭 Actuación / Teatro</option>
+                  <option value="STAFF">🛠️ Staff / Escenografía</option>
+                  <option value="PRODUCCION">🎬 Producción / Dirección</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Sección / Instrumento Específico</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                  SECCIÓN O INSTRUMENTO ESPECÍFICO
+                </label>
                 <input 
                   type="text" 
                   value={assignedSection} 
                   onChange={(e) => setAssignedSection(e.target.value)}
-                  placeholder="Ej: Saxofón Alto 1, Soprano, Percusión"
-                  style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-main)' }}
+                  placeholder="Ej: Saxofón Alto 1, Soprano, Percusión, Elenco Principal"
+                  style={{ width: '100%', padding: '12px 14px' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button className="btn-secondary" onClick={() => setSelectedStudent(null)}>Cancelar</button>
-                <button className="btn-primary" onClick={handleConfirmApproval}>
-                  <CheckCircle style={{ width: '16px', height: '16px' }} /> Confirmar & Activar
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <button className="btn-secondary" onClick={() => setSelectedStudent(null)}>
+                  Cancelar
+                </button>
+                <button className="btn-success" onClick={handleConfirmApproval}>
+                  <CheckCircle2 style={{ width: '16px', height: '16px' }} />
+                  <span>Confirmar & Activar Alumno</span>
                 </button>
               </div>
             </div>

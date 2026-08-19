@@ -224,7 +224,9 @@ export async function deleteStudentInNeon(studentId: string) {
 
 // 2. Approve Student in Neon Postgres
 export async function approveStudentInNeon(studentId: string, company: string, discipline: string, section: string) {
-  const safeId = studentId.replace(/'/g, "''");
+  const realUserId = await resolveRealUserId(studentId);
+  const targetId = realUserId || studentId;
+  const safeId = targetId.replace(/'/g, "''");
   const safeCompany = company.replace(/'/g, "''");
   const safeDisc = discipline.replace(/'/g, "''");
   const safeSec = section.replace(/'/g, "''");
@@ -232,15 +234,17 @@ export async function approveStudentInNeon(studentId: string, company: string, d
   const query = `
     UPDATE users 
     SET status = 'ACTIVE', company_name = '${safeCompany}', discipline = '${safeDisc}', section = '${safeSec}'
-    WHERE id = '${safeId}'
+    WHERE id::text = '${safeId}' OR email = '${safeId}' OR matricula = '${safeId}';
   `;
   await executeSql(query);
 }
 
 // 3. Reject Student in Neon Postgres
 export async function rejectStudentInNeon(studentId: string) {
-  const safeId = studentId.replace(/'/g, "''");
-  const query = `UPDATE users SET status = 'REJECTED' WHERE id = '${safeId}'`;
+  const realUserId = await resolveRealUserId(studentId);
+  const targetId = realUserId || studentId;
+  const safeId = targetId.replace(/'/g, "''");
+  const query = `UPDATE users SET status = 'REJECTED' WHERE id::text = '${safeId}' OR email = '${safeId}' OR matricula = '${safeId}';`;
   await executeSql(query);
 }
 
