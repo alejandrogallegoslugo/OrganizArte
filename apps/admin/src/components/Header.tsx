@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, ShieldCheck, MapPin, Sun, Moon, Palette, Music, ChevronDown, Menu } from 'lucide-react';
+import { Search, Bell, ShieldCheck, MapPin, Sun, Moon, Palette, Music, ChevronDown, Menu, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   currentCompany: string;
@@ -34,23 +34,24 @@ export const Header: React.FC<HeaderProps> = ({ currentCompany, setCurrentCompan
       <header style={{
         minHeight: '64px',
         borderBottom: '1px solid var(--border-color)',
-        background: 'var(--bg-card)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 16px',
-        gap: '12px',
+        padding: '0 24px',
+        gap: '16px',
+        boxShadow: 'var(--shadow-sm)',
       }}>
-        {/* Left Section: Hamburger Menu Toggle Button & Brand Logo & Campus Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Left Section: Hamburger Menu Toggle Button & Brand Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Hamburger Menu Toggle for Tablets & Mobile */}
           <button
             onClick={onToggleMobileMenu}
             className="mobile-hamburger-btn"
             style={{
-              background: 'rgba(2, 132, 199, 0.1)',
-              border: '1px solid rgba(2, 132, 199, 0.25)',
+              background: 'var(--primary-light)',
+              border: '1px solid var(--primary-glow)',
               color: 'var(--primary)',
               width: '40px',
               height: '40px',
@@ -65,163 +66,78 @@ export const Header: React.FC<HeaderProps> = ({ currentCompany, setCurrentCompan
             <Menu style={{ width: '22px', height: '22px' }} />
           </button>
 
-          {/* Official Arte y Cultura Brand Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
-            <div style={{ display: 'flex', gap: '2px', height: '20px', alignItems: 'center' }}>
-              <span style={{ width: '4px', height: '18px', background: '#f59e0b', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '22px', background: '#0033a0', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '16px', background: '#ec4899', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '20px', background: '#06b6d4', borderRadius: '2px' }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em', display: 'block', lineHeight: 1.1 }}>
-                Arte y Cultura
-              </span>
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#ec4899', display: 'block', marginTop: '-2px' }}>
-                colaboradores
-              </span>
-            </div>
-          </div>
-
-          {/* Campus Selector - Tec Campus Laguna Exclusivo */}
+          {/* Campus Indicator Badge */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(217, 119, 6, 0.1)',
-            border: '1px solid rgba(217, 119, 6, 0.25)',
+            background: 'var(--bg-dark)',
+            border: '1px solid var(--border-color)',
             padding: '6px 12px',
             borderRadius: '10px',
-            maxWidth: '100%'
           }}>
-            <MapPin style={{ width: '16px', height: '16px', color: 'var(--accent-amber)', flexShrink: 0 }} />
-            <select 
-              value={selectedCampus}
-              onChange={(e) => setSelectedCampus(e.target.value)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--accent-amber)',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="Tec Campus Laguna (Torreón)" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
-                Tec Campus Laguna (Torreón)
-              </option>
-            </select>
+            <MapPin style={{ width: '16px', height: '16px', color: 'var(--amber-accent)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>
+              {selectedCampus}
+            </span>
           </div>
         </div>
 
-        {/* Right Action Bar (Company Selector + Theme + Notifications) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Desktop Company Selector */}
-          <div className="desktop-company-selector" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.25)', padding: '6px 14px', borderRadius: '10px' }}>
-            <Palette style={{ width: '16px', height: '16px', color: 'var(--primary)', flexShrink: 0 }} />
-            <select 
-              value={currentCompany} 
+        {/* Right Section: Company Switcher, Theme Toggle & Notifications */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Company Selector Dropdown */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'var(--primary-light)',
+            border: '1px solid var(--primary-glow)',
+            padding: '6px 14px',
+            borderRadius: '10px',
+          }}>
+            <Music style={{ width: '16px', height: '16px', color: 'var(--primary)', flexShrink: 0 }} />
+            <select
+              value={currentCompany}
               onChange={(e) => setCurrentCompany(e.target.value)}
               style={{
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--primary)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
+                fontWeight: 800,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
                 outline: 'none',
-                cursor: 'pointer'
               }}
             >
-              {displayCompanies.map((c) => (
-                <option key={c.id} value={c.name} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
-                  {c.emoji} {c.name}
+              {displayCompanies.map((comp) => (
+                <option key={comp.id} value={comp.name} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
+                  {comp.emoji} {comp.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Theme Switcher */}
+          {/* Light / Dark Mode Toggle Button */}
           <button
             onClick={toggleTheme}
             style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
               background: 'var(--bg-dark)',
               border: '1px solid var(--border-color)',
-              padding: '6px 10px',
-              borderRadius: '10px',
               color: 'var(--text-main)',
-              fontSize: '0.8rem',
-              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
+              justifyContent: 'center',
+              cursor: 'pointer',
             }}
-            title="Cambiar Modo Claro / Oscuro"
+            title={theme === 'light' ? 'Cambiar a Modo Oscuro' : 'Cambiar a Modo Claro'}
           >
-            {theme === 'light' ? (
-              <Sun style={{ width: '16px', height: '16px', color: '#f59e0b' }} />
-            ) : (
-              <Moon style={{ width: '16px', height: '16px', color: '#38bdf8' }} />
-            )}
-          </button>
-
-          {/* Notifications Icon */}
-          <button style={{
-            background: 'var(--bg-dark)',
-            border: '1px solid var(--border-color)',
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            color: 'var(--text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative'
-          }}>
-            <Bell style={{ width: '18px', height: '18px' }} />
-            <span style={{ position: 'absolute', top: '7px', right: '7px', width: '8px', height: '8px', background: 'var(--accent-amber)', borderRadius: '50%' }}></span>
+            {theme === 'light' ? <Moon style={{ width: '18px', height: '18px' }} /> : <Sun style={{ width: '18px', height: '18px', color: '#f59e0b' }} />}
           </button>
         </div>
       </header>
-
-      {/* Dedicated Full-Width Company Selector Bar for Mobile/Tablet Screens */}
-      <div className="mobile-company-bar" style={{
-        background: 'rgba(2, 132, 199, 0.08)',
-        borderBottom: '1px solid rgba(2, 132, 199, 0.2)',
-        padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '8px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', flexShrink: 0 }}>
-          <Palette style={{ width: '14px', height: '14px' }} /> Proyecto / Elenco:
-        </div>
-        <select 
-          value={currentCompany} 
-          onChange={(e) => setCurrentCompany(e.target.value)}
-          style={{
-            flex: 1,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            color: 'var(--primary)',
-            fontWeight: 800,
-            fontSize: '0.82rem',
-            padding: '6px 10px',
-            outline: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          {displayCompanies.map((c) => (
-            <option key={c.id} value={c.name} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
-              {c.emoji} {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
     </div>
   );
 };

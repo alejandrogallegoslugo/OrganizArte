@@ -10,6 +10,8 @@ import {
   Layers,
   ChevronDown,
   Home,
+  ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   StudentProfile,
@@ -54,6 +56,8 @@ export const App: React.FC = () => {
 
   // Floating Chat Interno Modal State
   const [showChatModal, setShowChatModal] = useState<boolean>(false);
+  const [scanningRehearsalId, setScanningRehearsalId] = useState<string | null>(null);
+  const [justifyingRehearsal, setJustifyingRehearsal] = useState<RehearsalEvent | null>(null);
 
   // Load real data from Neon Postgres when logged in
   useEffect(() => {
@@ -79,7 +83,6 @@ export const App: React.FC = () => {
   const [loginErrorMessage, setLoginErrorMessage] = useState<string | null>(null);
 
   const handleRegisterStudent = async (newStudent: StudentProfile) => {
-    // Save to Neon DB with PENDING_APPROVAL status
     await registerStudentInNeon(newStudent);
     setLoginErrorMessage(null);
   };
@@ -93,16 +96,15 @@ export const App: React.FC = () => {
     }
 
     if (existing.status === 'PENDING_APPROVAL') {
-      setLoginErrorMessage(`⚠️ Hola ${existing.name}, tu registro (matrícula ${existing.matricula}) está pendiente de validación y autorización por el Administrador.`);
+      setLoginErrorMessage(`⚠️ Hola ${existing.name}, tu registro (matrícula ${existing.matricula}) está pendiente de validación por el Director.`);
       return false;
     }
 
     if (existing.status === 'REJECTED') {
-      setLoginErrorMessage('❌ Tu registro ha sido rechazado. Ponte en contacto con la Dirección de Arte y Cultura.');
+      setLoginErrorMessage(`⚠️ Hola ${existing.name}, tu solicitud de registro ha sido rechazada por la Dirección.`);
       return false;
     }
 
-    // Status is ACTIVE
     setStudent(existing);
     localStorage.setItem('organizarte_student_session', JSON.stringify(existing));
     return true;
@@ -110,193 +112,105 @@ export const App: React.FC = () => {
 
   const handleLogout = () => {
     setStudent(null);
-    setLoginErrorMessage(null);
     localStorage.removeItem('organizarte_student_session');
   };
 
-  const [scanningRehearsalId, setScanningRehearsalId] = useState<string | null>(null);
-  const [justifyingRehearsal, setJustifyingRehearsal] = useState<RehearsalEvent | null>(null);
-
-  if (!student) {
-    return (
-      <StudentLogin
-        onRegisterStudent={handleRegisterStudent}
-        onLoginStudent={handleLoginStudent}
-        loginErrorMessage={loginErrorMessage}
-      />
-    );
-  }
+  const handleRequestBooking = async (b: any) => {
+    if (!student) return;
+    await createRoomBookingInNeon({
+      roomId: b.roomId,
+      studentId: student.id,
+      studentName: student.name,
+      companyName: student.companyName,
+      purpose: b.purpose,
+      bookingDate: b.date,
+      startTime: b.startTime,
+      endTime: b.endTime,
+    });
+    setBookings((prev) => [...prev, { ...b, id: `bk-${Date.now()}`, status: 'PENDING' }]);
+  };
 
   const handleUpdateSlots = (newSlots: TimeSlot[]) => {
     setScheduleSlots(newSlots);
   };
 
-  const handleRequestBooking = async (newBooking: RoomBooking) => {
-    setBookings((prev) => [newBooking, ...prev]);
-    await createRoomBookingInNeon(newBooking);
-  };
+  // If not logged in, show sleek onboarding login card
+  if (!student) {
+    return (
+      <StudentLogin
+        onLogin={handleLoginStudent}
+        onRegister={handleRegisterStudent}
+        errorMessage={loginErrorMessage}
+      />
+    );
+  }
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', minHeight: '100vh', background: 'var(--bg-dark)', position: 'relative', paddingBottom: '70px' }}>
-      {/* PWA Mobile Header */}
-      <StudentHeader student={student} pushEnabled={pushEnabled} setPushEnabled={setPushEnabled} />
+    <div className="pwa-container">
+      {/* Top Header App Bar */}
+      <StudentHeader student={student} onLogout={handleLogout} />
 
-      {/* Main Screen Content */}
-      <main style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Pending Activation Banner if applicable */}
-        <AccountStatusBanner student={student} />
-
-        {/* TAB 1: INICIO (Home Screen with Credential & Services) */}
+      {/* Main Content Area */}
+      <main style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* TAB 1: INICIO */}
         {activeTab === 'home' && (
-          <>
-            {/* Top Hero: mi ID Digital Credential Card */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Digital Credentials Card */}
             <MiIDDigitalCard student={student} />
 
-            {/* servicios@arteycultura Touchable Accordion List */}
-            <div className="mitec-card" style={{ padding: '0', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  servicios@arteycultura
+            {/* Account Status Banner */}
+            <AccountStatusBanner status={student.status} />
+
+            {/* Quick Action Hub Cards */}
+            <div className="pwa-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="pwa-badge pwa-badge-emerald">🟢 INSCRITO AL SEMESTRE</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                  {scheduleSlots.length} Materias Cargadas
                 </span>
-                <Layers style={{ width: '16px', height: '16px', color: '#64748b' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {/* Service 1: Horario & IA Scanner (Cyan Strip) */}
-                <div className="mitec-accordion-item mitec-strip-cyan" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <button
-                    onClick={() => setOpenService(openService === 'horario' ? null : 'horario')}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      fontSize: '0.88rem',
-                      color: '#0f172a',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Sparkles style={{ width: '16px', height: '16px', color: '#06b6d4' }} />
-                      <span>Horario & IA Scanner</span>
-                    </div>
-                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'horario' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                  </button>
-                  {openService === 'horario' && (
-                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                      <p style={{ marginBottom: '8px' }}>Sube la captura de tu horario de MiTec para detectar horas libres automáticamente.</p>
-                      <button className="btn-pwa-primary" onClick={() => setActiveTab('schedule-ai')} style={{ fontSize: '0.82rem', padding: '10px' }}>
-                        Cargar Captura de Horario
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+                {student.companyName}
+              </div>
 
-                {/* Service 2: Ensayos & Agenda (Magenta Strip) */}
-                <div className="mitec-accordion-item mitec-strip-magenta" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <button
-                    onClick={() => setOpenService(openService === 'ensayos' ? null : 'ensayos')}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      fontSize: '0.88rem',
-                      color: '#0f172a',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Calendar style={{ width: '16px', height: '16px', color: '#ec4899' }} />
-                      <span>Ensayos & Agenda</span>
-                    </div>
-                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'ensayos' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                  </button>
-                  {openService === 'ensayos' && (
-                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                      <p style={{ marginBottom: '8px' }}>Revisa el calendario completo de ensayos, llamados generales y confirma asistencia por QR.</p>
-                      <button className="btn-pwa-primary" onClick={() => setActiveTab('agenda')} style={{ fontSize: '0.82rem', padding: '10px' }}>
-                        Ver Calendario de Ensayos
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  onClick={() => setActiveTab('schedule-ai')}
+                  className="btn-pwa-primary"
+                  style={{ fontSize: '0.82rem', padding: '12px' }}
+                >
+                  <Sparkles style={{ width: 16, height: 16 }} />
+                  <span>Escáner IA</span>
+                </button>
 
-                {/* Service 3: Repertorio & Audio Player (Purple Strip) */}
-                <div className="mitec-accordion-item mitec-strip-purple">
-                  <button
-                    onClick={() => setOpenService(openService === 'repertorio' ? null : 'repertorio')}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      background: 'none',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      fontSize: '0.88rem',
-                      color: '#0f172a',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Music style={{ width: '16px', height: '16px', color: '#8b5cf6' }} />
-                      <span>Repertorio & Audio</span>
-                    </div>
-                    <ChevronDown style={{ width: '16px', height: '16px', transform: openService === 'repertorio' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                  </button>
-                  {openService === 'repertorio' && (
-                    <div style={{ padding: '0 16px 14px 16px', fontSize: '0.82rem', color: '#64748b' }}>
-                      <p style={{ marginBottom: '8px' }}>Escucha tus maquetas y guías de audio aisladas por voz o instrumento.</p>
-                      <button className="btn-pwa-secondary" onClick={() => setActiveTab('practice')} style={{ fontSize: '0.82rem', padding: '10px' }}>
-                        Abrir Reproductor de Práctica
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => setActiveTab('agenda')}
+                  className="btn-pwa-secondary"
+                  style={{ fontSize: '0.82rem', padding: '12px' }}
+                >
+                  <Calendar style={{ width: 16, height: 16 }} />
+                  <span>Mi Agenda</span>
+                </button>
               </div>
             </div>
-
-            {/* Welcome Greeting Banner Card */}
-            <div className="mitec-card" style={{ background: 'linear-gradient(135deg, #e0f2fe 0%, #f3e8ff 100%)', border: '1px solid #cbd5e1' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0033a0', textTransform: 'uppercase', marginBottom: '4px' }}>
-                💙 TEC DE MONTERREY • ARTE Y CULTURA
-              </div>
-              <h2 style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>¡Hola, {student.name}!</h2>
-              <p style={{ fontSize: '0.82rem', color: '#475569', marginTop: '4px' }}>
-                {student.discipline || 'Arte y Cultura'} ({student.matricula})
-              </p>
-            </div>
-          </>
+          </div>
         )}
 
-        {/* TAB 2: AGENDA INDEPENDIENTE (Dedicated Rehearsals & Calendar View) */}
+        {/* TAB 2: AGENDA */}
         {activeTab === 'agenda' && (
           <StudentAgenda
-            student={student}
             rehearsals={rehearsals}
-            academicSlots={scheduleSlots}
-            onOpenQRScanner={(id) => setScanningRehearsalId(id)}
-            onOpenJustificationModal={(r) => setJustifyingRehearsal(r)}
-            onNavigateTab={(t) => setActiveTab(t as StudentPwaTab)}
+            studentSchedules={scheduleSlots}
+            onScanQR={(rehearsalId) => setScanningRehearsalId(rehearsalId)}
+            onJustifyAbsence={(rehearsal) => setJustifyingRehearsal(rehearsal)}
           />
         )}
 
         {/* TAB 3: IA HORARIO */}
         {activeTab === 'schedule-ai' && (
           <ScheduleUploadAI
-            studentId={student.id}
-            studentMatricula={student.matricula}
-            studentEmail={student.email}
+            studentId={student.matricula || student.email || student.id}
             currentSlots={scheduleSlots}
             onUpdateSlots={handleUpdateSlots}
           />
@@ -312,20 +226,36 @@ export const App: React.FC = () => {
 
         {/* TAB 6: PERFIL */}
         {activeTab === 'profile' && (
-          <div className="mitec-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h2 style={{ fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>Perfil Tec Integrante</h2>
+          <div className="pwa-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Perfil Tec Integrante</h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.88rem', color: '#475569' }}>
-              <div><strong>Nombre:</strong> {student.name}</div>
-              <div><strong>Matrícula:</strong> <span style={{ color: '#0033a0', fontWeight: 700, fontFamily: 'monospace' }}>{student.matricula}</span></div>
-              <div><strong>Correo:</strong> {student.email}</div>
-              <div><strong>Disciplina:</strong> {student.discipline}</div>
-              <div><strong>Campus:</strong> {student.campus}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.88rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Alumno</span>
+                <span style={{ fontWeight: 800 }}>{student.name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Matrícula</span>
+                <span style={{ fontWeight: 800, color: 'var(--primary)', fontFamily: 'monospace' }}>{student.matricula}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Correo</span>
+                <span style={{ fontWeight: 600 }}>{student.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Disciplina</span>
+                <span style={{ fontWeight: 800 }}>{student.discipline}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Campus</span>
+                <span style={{ fontWeight: 700 }}>{student.campus}</span>
+              </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button className="btn-pwa-secondary" onClick={handleLogout} style={{ color: '#f43f5e', borderColor: 'rgba(244,63,94,0.3)' }}>
-                <LogOut style={{ width: '16px', height: '16px' }} /> Cerrar Sesión
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button className="btn-pwa-secondary" onClick={handleLogout} style={{ color: 'var(--rose-accent)', borderColor: 'rgba(244, 63, 94, 0.3)' }}>
+                <LogOut style={{ width: '16px', height: '16px' }} />
+                <span>Cerrar Sesión</span>
               </button>
             </div>
           </div>
@@ -337,15 +267,15 @@ export const App: React.FC = () => {
         onClick={() => setShowChatModal(true)}
         style={{
           position: 'fixed',
-          bottom: '84px',
-          right: '16px',
-          width: '56px',
-          height: '56px',
+          bottom: '92px',
+          right: '20px',
+          width: '54px',
+          height: '54px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #0033a0 0%, #2563eb 100%)',
+          background: 'linear-gradient(135deg, var(--primary) 0%, var(--indigo-accent) 100%)',
           color: '#ffffff',
           border: 'none',
-          boxShadow: '0 6px 20px rgba(0, 51, 160, 0.45)',
+          boxShadow: '0 8px 24px var(--primary-glow)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -354,7 +284,7 @@ export const App: React.FC = () => {
         }}
         title="Chat Interno & Inbox"
       >
-        <MessageSquare style={{ width: '26px', height: '26px' }} />
+        <MessageSquare style={{ width: '24px', height: '24px' }} />
       </button>
 
       {/* Real-time Internal Chat Modal Drawer */}
@@ -372,13 +302,13 @@ export const App: React.FC = () => {
         <JustificationForm rehearsal={justifyingRehearsal} onClose={() => setJustifyingRehearsal(null)} />
       )}
 
-      {/* PWA Bottom Navigation Bar with "Inicio" as Tab 1 */}
-      <nav className="bottom-nav">
+      {/* PWA Floating Bottom Navigation Bar */}
+      <nav className="pwa-bottom-nav">
         <button
           className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
           onClick={() => setActiveTab('home')}
         >
-          <Home style={{ width: '22px', height: '22px' }} />
+          <Home style={{ width: '20px', height: '20px' }} />
           <span>Inicio</span>
         </button>
 
@@ -386,7 +316,7 @@ export const App: React.FC = () => {
           className={`nav-item ${activeTab === 'agenda' ? 'active' : ''}`}
           onClick={() => setActiveTab('agenda')}
         >
-          <Calendar style={{ width: '22px', height: '22px' }} />
+          <Calendar style={{ width: '20px', height: '20px' }} />
           <span>Agenda</span>
         </button>
 
@@ -394,7 +324,7 @@ export const App: React.FC = () => {
           className={`nav-item ${activeTab === 'schedule-ai' ? 'active' : ''}`}
           onClick={() => setActiveTab('schedule-ai')}
         >
-          <Sparkles style={{ width: '22px', height: '22px' }} />
+          <Sparkles style={{ width: '20px', height: '20px' }} />
           <span>IA Horario</span>
         </button>
 
@@ -402,7 +332,7 @@ export const App: React.FC = () => {
           className={`nav-item ${activeTab === 'practice' ? 'active' : ''}`}
           onClick={() => setActiveTab('practice')}
         >
-          <Music style={{ width: '22px', height: '22px' }} />
+          <Music style={{ width: '20px', height: '20px' }} />
           <span>Práctica</span>
         </button>
 
@@ -410,7 +340,7 @@ export const App: React.FC = () => {
           className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
           onClick={() => setActiveTab('profile')}
         >
-          <User style={{ width: '22px', height: '22px' }} />
+          <User style={{ width: '20px', height: '20px' }} />
           <span>Perfil</span>
         </button>
       </nav>

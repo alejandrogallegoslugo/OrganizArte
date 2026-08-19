@@ -14,6 +14,9 @@ import {
   Users,
   MessageSquare,
   X,
+  Sparkles,
+  Shield,
+  ChevronRight,
 } from 'lucide-react';
 
 export type AdminTab =
@@ -78,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.5)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(8px)',
             zIndex: 400,
           }}
         />
@@ -88,88 +91,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`sidebar-container ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
-          width: '240px',
-          background: '#ffffff',
-          borderRight: '1px solid #e2e8f0',
+          width: '260px',
+          background: 'var(--bg-surface)',
+          borderRight: '1px solid var(--border-color)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '20px 14px',
-          height: 'calc(100vh - 64px)',
+          padding: '24px 16px',
+          height: '100vh',
           position: 'sticky',
-          top: '64px',
+          top: 0,
           overflowY: 'auto',
           zIndex: 450,
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div>
           {/* Brand Logo Banner */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 4px 16px 4px', borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', gap: '3px', height: '24px', alignItems: 'center' }}>
-              <span style={{ width: '4px', height: '20px', background: '#f59e0b', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '26px', background: '#0033a0', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '20px', background: '#ec4899', borderRadius: '2px' }} />
-              <span style={{ width: '4px', height: '24px', background: '#06b6d4', borderRadius: '2px' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0033a0', fontFamily: 'Outfit, sans-serif', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                Arte y Cultura
-              </div>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ec4899', letterSpacing: '0.04em' }}>
-                colaboradores
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Header Close Button */}
-          {mobileOpen && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>Módulos Arte y Cultura</span>
-              <button onClick={onCloseMobile} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                <X style={{ width: 18, height: 18 }} />
-              </button>
-            </div>
-          )}
-
-          {/* Main Section Link */}
-          <div style={{ marginBottom: '16px' }}>
-            <button
-              onClick={() => handleSelectTab('dashboard')}
-              style={{
-                width: '100%',
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '20px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                border: 'none',
-                background: activeTab === 'dashboard' ? '#e0f2fe' : 'transparent',
-                color: activeTab === 'dashboard' ? '#0033a0' : '#475569',
-                fontWeight: activeTab === 'dashboard' ? 700 : 500,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
-              }}
-            >
-              <Home style={{ width: 18, height: 18, color: activeTab === 'dashboard' ? '#0033a0' : '#64748b' }} />
-              <span>Inicio</span>
-            </button>
+                justifyContent: 'center',
+                color: '#ffffff',
+                boxShadow: '0 4px 14px var(--primary-glow)'
+              }}>
+                <Sparkles style={{ width: '22px', height: '22px' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-heading)', letterSpacing: '-0.025em', lineHeight: 1.1 }}>
+                  OrganizArte
+                </div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: '2px' }}>
+                  Arte & Cultura Tec
+                </div>
+              </div>
+            </div>
+
+            {mobileOpen && (
+              <button onClick={onCloseMobile} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+                <X style={{ width: 20, height: 20 }} />
+              </button>
+            )}
           </div>
 
           {/* Section Header: MÓDULOS */}
           <div style={{
-            fontSize: '0.7rem',
+            fontSize: '0.68rem',
             fontWeight: 800,
-            color: '#94a3b8',
+            color: 'var(--text-dim)',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            padding: '8px 12px 6px 12px',
+            padding: '4px 12px 10px 12px',
           }}>
-            MÓDULOS DEL SISTEMA
+            PANEL DE CONTROL
           </div>
 
-          {/* Services Links */}
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {menuItems.slice(1).map((item) => {
+          {/* Navigation Links */}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {menuItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
@@ -179,65 +164,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    background: isActive ? '#f1f5f9' : 'transparent',
-                    color: isActive ? '#0033a0' : '#475569',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    border: isActive ? '1px solid var(--primary-glow)' : '1px solid transparent',
+                    background: isActive ? 'var(--primary-light)' : 'transparent',
+                    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
                     fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.85rem',
+                    fontSize: '0.88rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ color: isActive ? '#0033a0' : '#64748b' }}>{item.icon}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ color: isActive ? 'var(--primary)' : 'var(--text-muted)' }}>{item.icon}</span>
                     <span>{item.label}</span>
                   </div>
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span style={{
-                      background: '#ec4899',
-                      color: '#fff',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      padding: '2px 7px',
-                      borderRadius: '999px'
-                    }}>
-                      {item.badge}
-                    </span>
-                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span style={{
+                        background: 'var(--rose-accent)',
+                        color: '#ffffff',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                        boxShadow: '0 2px 8px rgba(244, 63, 94, 0.3)'
+                      }}>
+                        {item.badge}
+                      </span>
+                    )}
+                    {isActive && <ChevronRight style={{ width: 14, height: 14, color: 'var(--primary)' }} />}
+                  </div>
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* Footer: Service Status & User Logout */}
-        <div style={{ paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', fontSize: '0.75rem', color: '#10b981', fontWeight: 700, marginBottom: '12px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-            <span>Servicios Tec: OK</span>
+        {/* Footer: User Profile & Security Status */}
+        <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '10px', fontSize: '0.75rem', color: 'var(--emerald-accent)', fontWeight: 700 }}>
+            <Shield style={{ width: '14px', height: '14px' }} />
+            <span>Sistema Seguro & Conectado</span>
           </div>
 
           <div style={{
-            padding: '10px 12px',
-            background: '#f8fafc',
-            borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            padding: '12px',
+            background: 'var(--bg-dark)',
+            borderRadius: '12px',
+            border: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
           }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {adminUser?.name || 'Prof. Alejandro Gallegos'}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {adminUser?.name || 'Prof. Alejandro Gallegos'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                Director Arte & Cultura
+              </div>
             </div>
+
             {onLogout && (
               <button
                 onClick={onLogout}
-                style={{ background: 'none', border: 'none', color: '#e11d48', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--rose-accent)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
                 title="Cerrar sesión"
               >
-                <LogOut style={{ width: 16, height: 16 }} />
+                <LogOut style={{ width: 18, height: 18 }} />
               </button>
             )}
           </div>
