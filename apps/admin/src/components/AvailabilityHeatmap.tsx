@@ -27,6 +27,9 @@ import {
   User,
   Users,
   Search,
+  Layers,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
@@ -63,6 +66,25 @@ const HALF_HOURLY_SLOTS = [
   '19:00', '19:30', '20:00', '20:30', '21:00'
 ];
 
+// Aesthetic distinct color palette for colored course chips
+const COURSE_COLORS = [
+  { bg: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', border: '#3b82f6', text: '#ffffff' },
+  { bg: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)', border: '#8b5cf6', text: '#ffffff' },
+  { bg: 'linear-gradient(135deg, #064e3b 0%, #059669 100%)', border: '#10b981', text: '#ffffff' },
+  { bg: 'linear-gradient(135deg, #831843 0%, #db2777 100%)', border: '#ec4899', text: '#ffffff' },
+  { bg: 'linear-gradient(135deg, #7c2d12 0%, #ea580c 100%)', border: '#f97316', text: '#ffffff' },
+  { bg: 'linear-gradient(135deg, #134e4a 0%, #0d9488 100%)', border: '#14b8a6', text: '#ffffff' },
+];
+
+function getCourseColor(courseName: string) {
+  let hash = 0;
+  for (let i = 0; i < courseName.length; i++) {
+    hash = courseName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % COURSE_COLORS.length;
+  return COURSE_COLORS[index];
+}
+
 export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   students,
   schedules,
@@ -73,21 +95,21 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 }) => {
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
 
-  // Default selected student ID dynamically matching active student in DB
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(() => {
-    return activeStudents[0]?.id || '';
-  });
+  // Selected Student View Filter: 'ALL' (Heatmap) vs Specific Student ID (Individual Visual Grid)
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
+
+  // Discipline Filter: 'ALL', 'MUSICA', 'CANTO', 'DANZA', 'ACTUACION'
+  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
+
+  // Display Mode: 'grid' (Visual Weekly Calendar) vs 'table' (List Table)
+  const [displayMode, setDisplayMode] = useState<'grid' | 'table'>('grid');
 
   // Time Granularity State: 1 Hour vs 30 Minutes
   const [timeGranularity, setTimeGranularity] = useState<'HOURLY' | 'HALF_HOURLY'>('HOURLY');
 
-  // View Mode: 'heatmap' vs 'inspector'
-  const [activeSubTab, setActiveSubTab] = useState<'heatmap' | 'inspector'>('heatmap');
-
-  // Interactive Slot Detail Modal State
+  // Interactive Slot Detail Modal State (when clicking on collective heatmap cell)
   const [slotDetail, setSlotDetail] = useState<SlotDetailModalData | null>(null);
   const [slotFilterTab, setSlotFilterTab] = useState<'all' | 'free' | 'busy'>('all');
-  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
 
   // Real File Upload & Gemini OCR State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -105,22 +127,28 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   const [newEndTime, setNewEndTime] = useState('09:00');
   const [newValidUntil, setNewValidUntil] = useState('2026-12-15');
 
-  // Selected student object
-  const selectedStudentObj = activeStudents.find((s) => s.id === selectedStudentId) || activeStudents[0];
-
-  // Current student schedules (filtered strictly by studentId UUID match)
-  const currentStudentSchedules = schedules.filter((sch) => {
-    if (!selectedStudentObj) return false;
-    return sch.studentId === selectedStudentObj.id;
-  });
-
   const activeTimeSlots = timeGranularity === 'HOURLY' ? HOURLY_SLOTS : HALF_HOURLY_SLOTS;
 
-  // Compute Heatmap Matrix Occupancy
-  const getOccupancyForSlot = (day: string, timeSlot: string) => {
-    if (activeStudents.length === 0) return { busyCount: 0, freeCount: 0, percentageFree: 100, total: 0 };
+  // Filter students based on discipline filter
+  const filteredActiveStudents = activeStudents.filter((s) => {
+    if (disciplineFilter === 'ALL') return true;
+    return s.discipline === disciplineFilter;
+  });
 
-    const busyCount = activeStudents.filter((student) => {
+  // Selected student object (if a single student is selected)
+  const currentIndividualStudent = activeStudents.find((s) => s.id === selectedStudentFilter);
+
+  // Schedules for the selected individual student
+  const individualSchedules = schedules.filter((sch) => {
+    if (!currentIndividualStudent) return false;
+    return sch.studentId === currentIndividualStudent.id;
+  });
+
+  // Compute Heatmap Matrix Occupancy for Collective Mode
+  const getOccupancyForSlot = (day: string, timeSlot: string) => {
+    if (filteredActiveStudents.length === 0) return { busyCount: 0, freeCount: 0, percentageFree: 100, total: 0 };
+
+    const busyCount = filteredActiveStudents.filter((student) => {
       const studentSch = schedules.filter((sch) => sch.studentId === student.id);
       return studentSch.some((sch) => {
         if (sch.dayOfWeek.toLowerCase() !== day.toLowerCase()) return false;
@@ -128,18 +156,47 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       });
     }).length;
 
-    const freeCount = activeStudents.length - busyCount;
-    const percentageFree = Math.round((freeCount / activeStudents.length) * 100);
+    const freeCount = filteredActiveStudents.length - busyCount;
+    const percentageFree = Math.round((freeCount / filteredActiveStudents.length) * 100);
 
-    return { busyCount, freeCount, percentageFree, total: activeStudents.length };
+    return { busyCount, freeCount, percentageFree, total: filteredActiveStudents.length };
+  };
+
+  // Find overlapping course for individual student in a specific slot
+  const getIndividualSlotCourse = (day: string, timeSlot: string) => {
+    if (!currentIndividualStudent) return null;
+    return individualSchedules.find((sch) => {
+      if (sch.dayOfWeek.toLowerCase() !== day.toLowerCase()) return false;
+      return timeSlot >= sch.startTime && timeSlot < sch.endTime;
+    });
   };
 
   // Open Interactive Slot Details by Student Name
   const handleCellClick = (day: string, slot: string) => {
+    if (selectedStudentFilter !== 'ALL' && currentIndividualStudent) {
+      // In individual mode, clicking opens the add/edit modal for that specific slot
+      const existing = getIndividualSlotCourse(day, slot);
+      if (existing) {
+        handleOpenEditModal(existing);
+      } else {
+        setEditingCourseId(null);
+        setNewCourseName('');
+        setSelectedDays([day]);
+        setNewStartTime(slot);
+        const [h, m] = slot.split(':').map(Number);
+        const endHour = String(Math.min(22, h + 1)).padStart(2, '0');
+        setNewEndTime(`${endHour}:${String(m).padStart(2, '0')}`);
+        setNewValidUntil('2026-12-15');
+        setShowAddClassModal(true);
+      }
+      return;
+    }
+
+    // Collective Mode: open detailed breakdown modal
     const freeStudents: StudentProfile[] = [];
     const busyStudents: { student: StudentProfile; courseName: string; startTime: string; endTime: string }[] = [];
 
-    activeStudents.forEach((student) => {
+    filteredActiveStudents.forEach((student) => {
       const studentSch = schedules.filter((sch) => sch.studentId === student.id);
       const overlapping = studentSch.find((sch) => {
         if (sch.dayOfWeek.toLowerCase() !== day.toLowerCase()) return false;
@@ -158,8 +215,8 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       }
     });
 
-    const percentageFree = activeStudents.length > 0
-      ? Math.round((freeStudents.length / activeStudents.length) * 100)
+    const percentageFree = filteredActiveStudents.length > 0
+      ? Math.round((freeStudents.length / filteredActiveStudents.length) * 100)
       : 100;
 
     setSlotDetail({
@@ -170,7 +227,6 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       percentageFree,
     });
     setSlotFilterTab('all');
-    setDisciplineFilter('ALL');
   };
 
   const handleToggleDay = (day: string) => {
@@ -209,7 +265,10 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   const handleSaveClassSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCourseName.trim() || !selectedStudentObj) return;
+    if (!newCourseName.trim()) return;
+
+    const targetStudent = currentIndividualStudent || activeStudents[0];
+    if (!targetStudent) return;
 
     if (editingCourseId && onDeleteScheduleCourse) {
       onDeleteScheduleCourse(editingCourseId);
@@ -218,7 +277,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     if (onSaveScheduleCourse) {
       selectedDays.forEach((day) => {
         onSaveScheduleCourse(
-          selectedStudentObj.id,
+          targetStudent.id,
           day,
           newStartTime,
           newEndTime,
@@ -234,7 +293,8 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !selectedStudentObj) return;
+    const targetStudent = currentIndividualStudent || activeStudents[0];
+    if (!file || !targetStudent) return;
 
     setOcrLoading(true);
     setOcrResult(null);
@@ -247,7 +307,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         setOcrResult(result);
 
         if (result.courses && result.courses.length > 0 && onUploadStudentSchedule) {
-          onUploadStudentSchedule(selectedStudentObj.id, result.courses);
+          onUploadStudentSchedule(targetStudent.id, result.courses);
         }
       } catch (err) {
         console.error('Error procesando imagen de horario:', err);
@@ -258,121 +318,240 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Filtered Students for the Modal
-  const getFilteredSlotStudents = () => {
-    if (!slotDetail) return { free: [], busy: [] };
-
-    let free = slotDetail.freeStudents;
-    let busy = slotDetail.busyStudents;
-
-    if (disciplineFilter !== 'ALL') {
-      free = free.filter((s) => s.discipline === disciplineFilter);
-      busy = busy.filter((b) => b.student.discipline === disciplineFilter);
-    }
-
-    return { free, busy };
-  };
-
-  const { free: modalFilteredFree, busy: modalFilteredBusy } = getFilteredSlotStudents();
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px' }}>
-      {/* Top Header & View Mode Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="badge badge-blue">DISPONIBILIDAD & COMPATIBILIDAD</span>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-              {activeStudents.length} Alumnos Activos
-            </span>
+      {/* 1. TOP HEADER & MAIN CONTROLS */}
+      <div className="executive-card" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span className="badge badge-blue">MATRIZ DE HORARIOS ESCOLARES</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                {activeStudents.length} Alumnos en Sistema
+              </span>
+            </div>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
+              {selectedStudentFilter === 'ALL'
+                ? 'Disponibilidad General del Elenco'
+                : `Horario Semanal: ${currentIndividualStudent?.name}`}
+            </h2>
           </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
-            Matriz de Horarios Escolares
-          </h2>
+
+          {/* Action Buttons for Selected Student */}
+          {selectedStudentFilter !== 'ALL' && currentIndividualStudent && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <button onClick={handleOpenAddModal} className="btn-primary">
+                <Plus style={{ width: 16, height: 16 }} />
+                <span>+ Agregar Bloqueo</span>
+              </button>
+
+              <button onClick={() => setShowUploadModal(true)} className="btn-secondary">
+                <Sparkles style={{ width: 16, height: 16, color: 'var(--primary)' }} />
+                <span>Escanear IA Gemini</span>
+              </button>
+
+              {onClearStudentSchedules && (
+                <button
+                  onClick={() => {
+                    if (confirm(`¿Vaciar todo el horario de ${currentIndividualStudent.name}?`)) {
+                      onClearStudentSchedules(currentIndividualStudent.id);
+                    }
+                  }}
+                  className="btn-danger"
+                  title="Vaciar todas las materias del alumno"
+                >
+                  <Trash2 style={{ width: 16, height: 16 }} />
+                  <span>Vaciar Horario</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* View Controls & Granularity Switch */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          {/* SubTab Toggle */}
-          <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <button
-              onClick={() => setActiveSubTab('heatmap')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: activeSubTab === 'heatmap' ? 'var(--bg-surface)' : 'transparent',
-                color: activeSubTab === 'heatmap' ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: activeSubTab === 'heatmap' ? 800 : 600,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                boxShadow: activeSubTab === 'heatmap' ? 'var(--shadow-sm)' : 'none',
-              }}
-            >
-              🗺️ Mapa de Calor General
-            </button>
-            <button
-              onClick={() => setActiveSubTab('inspector')}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                background: activeSubTab === 'inspector' ? 'var(--bg-surface)' : 'transparent',
-                color: activeSubTab === 'inspector' ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: activeSubTab === 'inspector' ? 800 : 600,
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                boxShadow: activeSubTab === 'inspector' ? 'var(--shadow-sm)' : 'none',
-              }}
-            >
-              🔍 Inspector por Alumno
-            </button>
+        {/* 2. DYNAMIC FILTER TOOLBAR */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          {/* Student Filter Selector Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 300px', maxWidth: '480px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: selectedStudentFilter === 'ALL' ? 'var(--primary-light)' : '#dbeafe', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {selectedStudentFilter === 'ALL' ? <Users style={{ width: 18, height: 18 }} /> : <UserCheck style={{ width: 18, height: 18 }} />}
+            </div>
+
+            <div style={{ width: '100%' }}>
+              <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                VISUALIZAR HORARIO DE:
+              </label>
+              <select
+                value={selectedStudentFilter}
+                onChange={(e) => setSelectedStudentFilter(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  background: 'var(--bg-dark)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-main)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="ALL">👥 Todos los Alumnos (Mapa de Calor General)</option>
+                <optgroup label="── Ver Horario Individual de Alumno ──">
+                  {activeStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      👤 {s.name} ({s.matricula}) — {s.discipline}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
           </div>
 
-          {/* Granularity Switcher */}
-          <button
-            onClick={() => setTimeGranularity(timeGranularity === 'HOURLY' ? 'HALF_HOURLY' : 'HOURLY')}
-            className="btn-secondary"
-            style={{ fontSize: '0.82rem' }}
-          >
-            <SlidersHorizontal style={{ width: 14, height: 14 }} />
-            <span>{timeGranularity === 'HOURLY' ? '⏰ Cada 1 Hora' : '⏱️ Cada 30 Minutos'}</span>
-          </button>
+          {/* Quick Filter by Discipline (for general map) */}
+          {selectedStudentFilter === 'ALL' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginRight: '4px' }}>
+                Disciplina:
+              </span>
+              {[
+                { id: 'ALL', label: 'Todas' },
+                { id: 'MUSICA', label: '🎺 Música' },
+                { id: 'CANTO', label: '🎤 Canto' },
+                { id: 'DANZA', label: '💃 Danza' },
+                { id: 'ACTUACION', label: '🎭 Actuación' },
+              ].map((disc) => (
+                <button
+                  key={disc.id}
+                  onClick={() => setDisciplineFilter(disc.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: disciplineFilter === disc.id ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                    background: disciplineFilter === disc.id ? 'var(--primary-light)' : 'var(--bg-dark)',
+                    color: disciplineFilter === disc.id ? 'var(--primary)' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {disc.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Granularity & View Mode Toggles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            {selectedStudentFilter !== 'ALL' && (
+              <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <button
+                  onClick={() => setDisplayMode('grid')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: displayMode === 'grid' ? 'var(--bg-card)' : 'transparent',
+                    color: displayMode === 'grid' ? 'var(--primary)' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                  }}
+                  title="Vista Gráfica Semanal"
+                >
+                  <LayoutGrid style={{ width: 14, height: 14 }} />
+                  <span>Gráfico</span>
+                </button>
+                <button
+                  onClick={() => setDisplayMode('table')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: displayMode === 'table' ? 'var(--bg-card)' : 'transparent',
+                    color: displayMode === 'table' ? 'var(--primary)' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                  }}
+                  title="Vista de Tabla / Lista"
+                >
+                  <List style={{ width: 14, height: 14 }} />
+                  <span>Lista</span>
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => setTimeGranularity(timeGranularity === 'HOURLY' ? 'HALF_HOURLY' : 'HOURLY')}
+              className="btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '8px 12px' }}
+            >
+              <SlidersHorizontal style={{ width: 13, height: 13 }} />
+              <span>{timeGranularity === 'HOURLY' ? '⏰ 1 Hora' : '⏱️ 30 Mins'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* SUBTAB 1: HEATMAP GRID */}
-      {activeSubTab === 'heatmap' && (
+      {/* 3. VISUAL WEEKLY SCHEDULE GRID (FOR BOTH GENERAL MAP & INDIVIDUAL STUDENT) */}
+      {(selectedStudentFilter === 'ALL' || displayMode === 'grid') && (
         <div className="executive-card" style={{ padding: '24px', overflowX: 'auto' }}>
+          {/* Header Description */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Porcentaje de Disponibilidad Libre</h3>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                👉 <strong>Haz clic en cualquier bloque horario</strong> para ver la lista con nombres de alumnos disponibles y ocupados con clase.
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
+                {selectedStudentFilter === 'ALL'
+                  ? 'Matriz Semanal de Compatibilidad (Lunes a Sábado)'
+                  : `Horario Gráfico de ${currentIndividualStudent?.name} (${individualSchedules.length} materias)`}
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {selectedStudentFilter === 'ALL'
+                  ? '👉 Haz clic en cualquier casilla para ver los nombres de los alumnos disponibles y ocupados.'
+                  : '👉 Haz clic en cualquier materia para editarla, o en un espacio libre para agregar un bloqueo.'}
               </p>
             </div>
 
-            {/* Legend */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#dcfce7', border: '1px solid #86efac' }} />
-                <span>80-100% Libre</span>
+            {/* Color Legend */}
+            {selectedStudentFilter === 'ALL' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#dcfce7', border: '1px solid #86efac' }} />
+                  <span>80-100% Libre</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#fef9c3', border: '1px solid #fde047' }} />
+                  <span>40-79% Libre</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ffe4e6', border: '1px solid #fca5a5' }} />
+                  <span>0-39% Libre</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#fef9c3', border: '1px solid #fde047' }} />
-                <span>40-79% Libre</span>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#2563eb' }} />
+                  <span>Materia / Clase</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f8fafc', border: '1px dashed #cbd5e1' }} />
+                  <span>Espacio Libre</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ffe4e6', border: '1px solid #fca5a5' }} />
-                <span>0-39% Libre</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <table className="custom-table" style={{ width: '100%', minWidth: '700px' }}>
+          {/* Schedule Table */}
+          <table className="custom-table" style={{ width: '100%', minWidth: '780px' }}>
             <thead>
               <tr>
-                <th style={{ width: '100px' }}>HORA</th>
+                <th style={{ width: '90px' }}>HORA</th>
                 {DAYS.map((day) => (
                   <th key={day} style={{ textAlign: 'center' }}>{day}</th>
                 ))}
@@ -381,53 +560,133 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             <tbody>
               {activeTimeSlots.map((slot) => (
                 <tr key={slot}>
-                  <td style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{slot}</td>
+                  <td style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{slot}</td>
                   {DAYS.map((day) => {
-                    const occ = getOccupancyForSlot(day, slot);
-                    let bgColor = '#dcfce7';
-                    let textColor = '#166534';
-                    let borderColor = '#86efac';
+                    // MODE A: COLLECTIVE HEATMAP
+                    if (selectedStudentFilter === 'ALL') {
+                      const occ = getOccupancyForSlot(day, slot);
+                      let bgColor = '#dcfce7';
+                      let textColor = '#166534';
+                      let borderColor = '#86efac';
 
-                    if (occ.percentageFree < 40) {
-                      bgColor = '#ffe4e6';
-                      textColor = '#9f1239';
-                      borderColor = '#fca5a5';
-                    } else if (occ.percentageFree < 80) {
-                      bgColor = '#fef9c3';
-                      textColor = '#854d0e';
-                      borderColor = '#fde047';
+                      if (occ.percentageFree < 40) {
+                        bgColor = '#ffe4e6';
+                        textColor = '#9f1239';
+                        borderColor = '#fca5a5';
+                      } else if (occ.percentageFree < 80) {
+                        bgColor = '#fef9c3';
+                        textColor = '#854d0e';
+                        borderColor = '#fde047';
+                      }
+
+                      return (
+                        <td key={day} style={{ textAlign: 'center', padding: '6px' }}>
+                          <div
+                            onClick={() => handleCellClick(day, slot)}
+                            style={{
+                              background: bgColor,
+                              color: textColor,
+                              border: `1px solid ${borderColor}`,
+                              borderRadius: '10px',
+                              padding: '8px 4px',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.04)';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                            }}
+                            title={`Clic para ver quiénes están libres u ocupados el ${day} a las ${slot}`}
+                          >
+                            {occ.percentageFree}% Libre
+                            <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700, marginTop: '2px' }}>
+                              {occ.freeCount}/{occ.total} alumnos
+                            </div>
+                          </div>
+                        </td>
+                      );
                     }
 
+                    // MODE B: INDIVIDUAL VISUAL SCHEDULE (COLORED CHIPS)
+                    const course = getIndividualSlotCourse(day, slot);
+
+                    if (course) {
+                      const color = getCourseColor(course.courseName);
+                      return (
+                        <td key={day} style={{ textAlign: 'center', padding: '4px' }}>
+                          <div
+                            onClick={() => handleCellClick(day, slot)}
+                            style={{
+                              background: color.bg,
+                              color: color.text,
+                              borderRadius: '10px',
+                              padding: '8px 6px',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                              transition: 'all 0.15s ease',
+                              textAlign: 'left',
+                              minHeight: '48px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.03)';
+                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                            }}
+                            title={`Editar: ${course.courseName} (${course.startTime} - ${course.endTime})`}
+                          >
+                            <div style={{ fontSize: '0.75rem', fontWeight: 800, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                              {course.courseName}
+                            </div>
+                            <div style={{ fontSize: '0.65rem', opacity: 0.9, fontWeight: 700, marginTop: '4px' }}>
+                              🕒 {course.startTime} - {course.endTime}
+                            </div>
+                          </div>
+                        </td>
+                      );
+                    }
+
+                    // Free Slot for Individual Student
                     return (
-                      <td key={day} style={{ textAlign: 'center', padding: '6px' }}>
+                      <td key={day} style={{ textAlign: 'center', padding: '4px' }}>
                         <div
                           onClick={() => handleCellClick(day, slot)}
                           style={{
-                            background: bgColor,
-                            color: textColor,
-                            border: `1px solid ${borderColor}`,
+                            background: 'rgba(248, 250, 252, 0.6)',
+                            border: '1px dashed #cbd5e1',
                             borderRadius: '10px',
-                            padding: '8px 4px',
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
+                            padding: '10px 4px',
+                            fontSize: '0.72rem',
+                            color: 'var(--text-dim)',
+                            fontWeight: 700,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.04)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                            e.currentTarget.style.background = 'var(--primary-light)';
+                            e.currentTarget.style.borderColor = 'var(--primary)';
+                            e.currentTarget.style.color = 'var(--primary)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                            e.currentTarget.style.background = 'rgba(248, 250, 252, 0.6)';
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.color = 'var(--text-dim)';
                           }}
-                          title={`Clic para ver quiénes están libres u ocupados el ${day} a las ${slot}`}
+                          title={`+ Agregar clase el ${day} a las ${slot}`}
                         >
-                          {occ.percentageFree}% Libre
-                          <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700, marginTop: '2px' }}>
-                            {occ.freeCount}/{occ.total} alumnos
-                          </div>
+                          + Libre
                         </div>
                       </td>
                     );
@@ -439,140 +698,75 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* SUBTAB 2: INSPECTOR BY STUDENT */}
-      {activeSubTab === 'inspector' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Student Selector Card */}
-          <div className="executive-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UserCheck style={{ width: 22, height: 22 }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>
-                  ALUMNO SELECCIONADO
-                </label>
-                <select
-                  value={selectedStudentId}
-                  onChange={(e) => setSelectedStudentId(e.target.value)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    fontSize: '1.15rem',
-                    fontWeight: 800,
-                    color: 'var(--text-main)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    fontFamily: 'var(--font-heading)',
-                  }}
-                >
-                  {activeStudents.map((s) => (
-                    <option key={s.id} value={s.id} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
-                      {s.name} ({s.matricula}) — {s.companyName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <button onClick={handleOpenAddModal} className="btn-primary">
-                <Plus style={{ width: 16, height: 16 }} />
-                <span>+ Bloqueo Masivo</span>
-              </button>
-
-              <button onClick={() => setShowUploadModal(true)} className="btn-secondary">
-                <Sparkles style={{ width: 16, height: 16, color: 'var(--primary)' }} />
-                <span>Escanear IA Gemini</span>
-              </button>
-
-              {onClearStudentSchedules && selectedStudentObj && (
-                <button
-                  onClick={() => {
-                    if (confirm(`¿Vaciar todo el horario de ${selectedStudentObj.name}?`)) {
-                      onClearStudentSchedules(selectedStudentObj.id);
-                    }
-                  }}
-                  className="btn-secondary"
-                  style={{ color: 'var(--rose-accent)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
-                >
-                  <Trash2 style={{ width: 16, height: 16 }} />
-                  <span>Vaciar Horario</span>
-                </button>
-              )}
-            </div>
+      {/* 4. TABLE VIEW (WHEN 'LISTA' IS TOGGLED ON INDIVIDUAL STUDENT) */}
+      {selectedStudentFilter !== 'ALL' && displayMode === 'table' && (
+        <div className="executive-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+              Tabla de Materias y Bloqueos de {currentIndividualStudent?.name}
+            </h3>
+            <span className="badge badge-emerald">
+              {individualSchedules.length} Clases Registradas
+            </span>
           </div>
 
-          {/* Student Schedule Items Table */}
-          <div className="executive-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>
-                Horario Registrado de {selectedStudentObj?.name}
-              </h3>
-              <span className="badge badge-emerald">
-                {currentStudentSchedules.length} Clases / Bloqueos
-              </span>
+          {individualSchedules.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Clock style={{ width: 36, height: 36, margin: '0 auto 12px auto', opacity: 0.4 }} />
+              <div style={{ fontWeight: 700 }}>Sin horario registrado</div>
+              <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Usa "+ Agregar Bloqueo" o "Escanear IA Gemini".</div>
             </div>
-
-            {currentStudentSchedules.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <Clock style={{ width: 36, height: 36, margin: '0 auto 12px auto', opacity: 0.4 }} />
-                <div style={{ fontWeight: 700 }}>Sin horario o bloqueos registrados</div>
-                <div style={{ fontSize: '0.82rem', marginTop: '4px' }}>Utiliza "+ Bloqueo Masivo" o "Escanear IA Gemini" para agregar materias.</div>
-              </div>
-            ) : (
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    <th>DÍA</th>
-                    <th>HORARIO</th>
-                    <th>MATERIA / BLOQUEO</th>
-                    <th>PERIODO</th>
-                    <th>VIGENCIA</th>
-                    <th style={{ textAlign: 'right' }}>ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentStudentSchedules.map((sch) => (
-                    <tr key={sch.id}>
-                      <td style={{ fontWeight: 800, color: 'var(--primary)' }}>{sch.dayOfWeek}</td>
-                      <td style={{ fontWeight: 700 }}>{sch.startTime} - {sch.endTime} hs</td>
-                      <td style={{ fontWeight: 600 }}>{sch.courseName}</td>
-                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{sch.periodName || 'Semestre Diciembre 2026'}</td>
-                      <td>
-                        <span className="badge badge-emerald">🟢 {sch.validUntil || '2026-12-15'}</span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '8px' }}>
+          ) : (
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>DÍA</th>
+                  <th>HORARIO</th>
+                  <th>MATERIA / BLOQUEO</th>
+                  <th>PERIODO</th>
+                  <th>VIGENCIA</th>
+                  <th style={{ textAlign: 'right' }}>ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                {individualSchedules.map((sch) => (
+                  <tr key={sch.id}>
+                    <td style={{ fontWeight: 800, color: 'var(--primary)' }}>{sch.dayOfWeek}</td>
+                    <td style={{ fontWeight: 700 }}>{sch.startTime} - {sch.endTime} hs</td>
+                    <td style={{ fontWeight: 600 }}>{sch.courseName}</td>
+                    <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{sch.periodName || 'Semestre Diciembre 2026'}</td>
+                    <td>
+                      <span className="badge badge-emerald">🟢 {sch.validUntil || '2026-12-15'}</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleOpenEditModal(sch)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                          title="Editar"
+                        >
+                          <Edit2 style={{ width: 16, height: 16 }} />
+                        </button>
+                        {onDeleteScheduleCourse && (
                           <button
-                            onClick={() => handleOpenEditModal(sch)}
-                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                            title="Editar"
+                            onClick={() => onDeleteScheduleCourse(sch.id)}
+                            style={{ background: 'none', border: 'none', color: 'var(--rose-accent)', cursor: 'pointer' }}
+                            title="Eliminar"
                           >
-                            <Edit2 style={{ width: 16, height: 16 }} />
+                            <Trash2 style={{ width: 16, height: 16 }} />
                           </button>
-                          {onDeleteScheduleCourse && (
-                            <button
-                              onClick={() => onDeleteScheduleCourse(sch.id)}
-                              style={{ background: 'none', border: 'none', color: 'var(--rose-accent)', cursor: 'pointer' }}
-                              title="Eliminar"
-                            >
-                              <Trash2 style={{ width: 16, height: 16 }} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
-      {/* DETAILED SLOT AVAILABILITY MODAL (CLICK ON HEATMAP CELL) */}
+      {/* 5. DETAILED SLOT AVAILABILITY MODAL (CLICK ON HEATMAP CELL) */}
       {slotDetail && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', padding: 0, overflow: 'hidden' }}>
@@ -589,7 +783,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                     fontSize: '0.72rem',
                     fontWeight: 800,
                   }}>
-                    {slotDetail.percentageFree}% Libre ({slotDetail.freeStudents.length} de {activeStudents.length} alumnos)
+                    {slotDetail.percentageFree}% Libre ({slotDetail.freeStudents.length} de {filteredActiveStudents.length} alumnos)
                   </span>
                 </div>
                 <h3 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.025em' }}>
@@ -605,83 +799,66 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
               </button>
             </div>
 
-            {/* Filter Bar */}
-            <div style={{ padding: '12px 28px', background: 'var(--bg-dark)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-              {/* Filter Tabs */}
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={() => setSlotFilterTab('all')}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: slotFilterTab === 'all' ? 'var(--primary)' : 'transparent',
-                    color: slotFilterTab === 'all' ? '#ffffff' : 'var(--text-muted)',
-                    fontWeight: 700,
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Todos ({activeStudents.length})
-                </button>
-                <button
-                  onClick={() => setSlotFilterTab('free')}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: slotFilterTab === 'free' ? '#10b981' : 'transparent',
-                    color: slotFilterTab === 'free' ? '#ffffff' : 'var(--text-muted)',
-                    fontWeight: 700,
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🟢 Libres ({slotDetail.freeStudents.length})
-                </button>
-                <button
-                  onClick={() => setSlotFilterTab('busy')}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: slotFilterTab === 'busy' ? '#f43f5e' : 'transparent',
-                    color: slotFilterTab === 'busy' ? '#ffffff' : 'var(--text-muted)',
-                    fontWeight: 700,
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  🔴 Con Clase ({slotDetail.busyStudents.length})
-                </button>
-              </div>
-
-              {/* Discipline Filter */}
-              <select
-                value={disciplineFilter}
-                onChange={(e) => setDisciplineFilter(e.target.value)}
-                style={{ padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700 }}
+            {/* Filter Tabs */}
+            <div style={{ padding: '12px 28px', background: 'var(--bg-dark)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => setSlotFilterTab('all')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: slotFilterTab === 'all' ? 'var(--primary)' : 'transparent',
+                  color: slotFilterTab === 'all' ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                }}
               >
-                <option value="ALL">Todas las Disciplinas</option>
-                <option value="MUSICA">🎺 Música</option>
-                <option value="CANTO">🎤 Canto</option>
-                <option value="DANZA">💃 Danza</option>
-                <option value="ACTUACION">🎭 Actuación</option>
-                <option value="STAFF">🛠️ Staff</option>
-              </select>
+                Todos ({filteredActiveStudents.length})
+              </button>
+              <button
+                onClick={() => setSlotFilterTab('free')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: slotFilterTab === 'free' ? '#10b981' : 'transparent',
+                  color: slotFilterTab === 'free' ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🟢 Libres ({slotDetail.freeStudents.length})
+              </button>
+              <button
+                onClick={() => setSlotFilterTab('busy')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: slotFilterTab === 'busy' ? '#f43f5e' : 'transparent',
+                  color: slotFilterTab === 'busy' ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🔴 Con Clase ({slotDetail.busyStudents.length})
+              </button>
             </div>
 
             {/* Modal Body: Scrollable Student Cards List */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* 1. FREE STUDENTS SECTION */}
-              {(slotFilterTab === 'all' || slotFilterTab === 'free') && modalFilteredFree.length > 0 && (
+              {/* FREE STUDENTS */}
+              {(slotFilterTab === 'all' || slotFilterTab === 'free') && slotDetail.freeStudents.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    🟢 ALUMNOS DISPONIBLES ({modalFilteredFree.length})
+                    🟢 ALUMNOS DISPONIBLES ({slotDetail.freeStudents.length})
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-                    {modalFilteredFree.map((student) => (
+                    {slotDetail.freeStudents.map((student) => (
                       <div
                         key={student.id}
                         style={{
@@ -711,8 +888,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
                         <button
                           onClick={() => {
-                            setSelectedStudentId(student.id);
-                            setActiveSubTab('inspector');
+                            setSelectedStudentFilter(student.id);
                             setSlotDetail(null);
                           }}
                           style={{
@@ -726,7 +902,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                             borderRadius: '6px',
                             flexShrink: 0,
                           }}
-                          title="Inspeccionar horario completo"
+                          title="Ver Horario Gráfico Individual"
                         >
                           Ver Horario →
                         </button>
@@ -736,15 +912,15 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                 </div>
               )}
 
-              {/* 2. BUSY STUDENTS SECTION */}
-              {(slotFilterTab === 'all' || slotFilterTab === 'busy') && modalFilteredBusy.length > 0 && (
+              {/* BUSY STUDENTS */}
+              {(slotFilterTab === 'all' || slotFilterTab === 'busy') && slotDetail.busyStudents.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: slotFilterTab === 'all' ? '12px' : '0' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    🔴 ALUMNOS CON CLASE / OCUPADOS ({modalFilteredBusy.length})
+                    🔴 ALUMNOS CON CLASE / OCUPADOS ({slotDetail.busyStudents.length})
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-                    {modalFilteredBusy.map((item) => (
+                    {slotDetail.busyStudents.map((item) => (
                       <div
                         key={item.student.id}
                         style={{
@@ -775,8 +951,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
                           <button
                             onClick={() => {
-                              setSelectedStudentId(item.student.id);
-                              setActiveSubTab('inspector');
+                              setSelectedStudentFilter(item.student.id);
                               setSlotDetail(null);
                             }}
                             style={{
@@ -790,13 +965,12 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                               borderRadius: '6px',
                               flexShrink: 0,
                             }}
-                            title="Inspeccionar horario completo"
+                            title="Ver Horario Gráfico Individual"
                           >
                             Ver Horario →
                           </button>
                         </div>
 
-                        {/* Busy Course Details Badge */}
                         <div style={{
                           background: 'rgba(244, 63, 94, 0.08)',
                           borderRadius: '8px',
@@ -818,13 +992,6 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                   </div>
                 </div>
               )}
-
-              {modalFilteredFree.length === 0 && modalFilteredBusy.length === 0 && (
-                <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <Users style={{ width: 36, height: 36, margin: '0 auto 8px auto', opacity: 0.4 }} />
-                  <div style={{ fontWeight: 700 }}>No hay alumnos que coincidan con los filtros seleccionados</div>
-                </div>
-              )}
             </div>
 
             {/* Modal Footer */}
@@ -837,13 +1004,13 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* Multi-day Bulk Blocking Modal */}
+      {/* 6. MULTI-DAY BULK BLOCKING MODAL */}
       {showAddClassModal && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '520px', padding: '28px', background: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
-                {editingCourseId ? 'Editar Bloqueo' : 'Cargar Bloqueo / Materia Masiva'}
+                {editingCourseId ? 'Editar Bloqueo de Horario' : 'Cargar Bloqueo / Materia'}
               </h3>
               <button onClick={() => setShowAddClassModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X style={{ width: 20, height: 20 }} />
@@ -859,13 +1026,13 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                   type="text"
                   value={newCourseName}
                   onChange={(e) => setNewCourseName(e.target.value)}
-                  placeholder="Ej: Clases Bloqueadas / Trabajo de Laboratorio"
+                  placeholder="Ej: Clases Bloqueadas / Laboratorio"
                   required
                   style={{ width: '100%', padding: '10px 14px' }}
                 />
               </div>
 
-              {/* Day Chips Selection */}
+              {/* Day Selection */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
@@ -966,7 +1133,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* Gemini OCR Upload Modal */}
+      {/* 7. GEMINI OCR UPLOAD MODAL */}
       {showUploadModal && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', background: 'var(--bg-surface)' }}>
@@ -981,7 +1148,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             </div>
 
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.5 }}>
-              Sube una captura de pantalla del horario de MiTec del alumno. La Inteligencia Artificial extraerá automáticamente el listado de materias y reemplazará su horario anterior.
+              Sube una captura de pantalla del horario de MiTec del alumno. La IA extraerá todas las materias y actualizará su horario semanal gráfico.
             </p>
 
             <label style={{
@@ -999,7 +1166,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             }}>
               <Upload style={{ width: 32, height: 32, color: 'var(--primary)' }} />
               <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>
-                {ocrLoading ? 'Procesando con Gemini Vision IA...' : 'Haz clic para seleccionar imagen de MiTec'}
+                {ocrLoading ? 'Procesando con Gemini Vision IA...' : 'Haz clic para seleccionar captura de MiTec'}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 Formatos soportados: PNG, JPG, JPEG
