@@ -139,8 +139,11 @@ export const App: React.FC = () => {
     return (
       <StudentLogin
         onLogin={handleLoginStudent}
+        onLoginStudent={handleLoginStudent}
         onRegister={handleRegisterStudent}
+        onRegisterStudent={handleRegisterStudent}
         errorMessage={loginErrorMessage}
+        loginErrorMessage={loginErrorMessage}
       />
     );
   }

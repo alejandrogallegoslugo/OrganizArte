@@ -3,12 +3,22 @@ import { Sparkles, Mail, Lock, User, ShieldCheck, ArrowRight, CheckCircle2, Cloc
 import { StudentProfile, DisciplineType } from '../shared';
 
 interface StudentLoginProps {
-  onRegisterStudent: (newStudent: StudentProfile) => void;
-  onLoginStudent: (email: string) => Promise<boolean>;
+  onRegisterStudent?: (newStudent: StudentProfile) => void | Promise<any>;
+  onRegister?: (newStudent: StudentProfile) => void | Promise<any>;
+  onLoginStudent?: (email: string) => Promise<boolean>;
+  onLogin?: (email: string) => Promise<boolean>;
   loginErrorMessage?: string | null;
+  errorMessage?: string | null;
 }
 
-export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, onLoginStudent, loginErrorMessage }) => {
+export const StudentLogin: React.FC<StudentLoginProps> = ({
+  onRegisterStudent,
+  onRegister,
+  onLoginStudent,
+  onLogin,
+  loginErrorMessage,
+  errorMessage,
+}) => {
   // Default to Iniciar Sesión mode
   const [isRegisterMode, setIsRegisterMode] = useState(false);
 
@@ -25,6 +35,10 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const registerHandler = onRegisterStudent || onRegister;
+  const loginHandler = onLoginStudent || onLogin;
+  const activeError = localError || loginErrorMessage || errorMessage;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
@@ -34,9 +48,9 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
       if (isRegisterMode) {
         const newStudent: StudentProfile = {
           id: `std-${Date.now()}`,
-          name,
-          email,
-          matricula: matricula.toUpperCase(),
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          matricula: matricula.trim().toUpperCase(),
           campus,
           role: 'STUDENT',
           status: 'PENDING_APPROVAL',
@@ -45,13 +59,19 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
           section: 'Alumno Integrante',
           createdAt: new Date().toISOString().split('T')[0],
         };
-        await onRegisterStudent(newStudent);
+
+        if (registerHandler) {
+          await registerHandler(newStudent);
+        }
+
         setLocalPendingInfo({ name, email, matricula: matricula.toUpperCase() });
         setSubmittedPending(true);
       } else {
-        const success = await onLoginStudent(email);
-        if (!success) {
-          setLocalError('No fue posible ingresar.');
+        if (loginHandler) {
+          const success = await loginHandler(email.trim());
+          if (!success) {
+            setLocalError('No fue posible ingresar con los datos proporcionados.');
+          }
         }
       }
     } catch (err: any) {
@@ -167,7 +187,7 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
               </button>
             </div>
 
-            {(loginErrorMessage || localError) && (
+            {activeError && (
               <div style={{
                 padding: '12px',
                 background: 'rgba(239, 68, 68, 0.12)',
@@ -181,7 +201,7 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                 gap: '8px'
               }}>
                 <AlertCircle style={{ width: '18px', height: '18px', flexShrink: 0 }} />
-                <span>{loginErrorMessage || localError}</span>
+                <span>{activeError}</span>
               </div>
             )}
 
@@ -232,8 +252,8 @@ export const StudentLogin: React.FC<StudentLoginProps> = ({ onRegisterStudent, o
                       >
                         <option value="MUSICA">Música</option>
                         <option value="CANTO">Canto / Vocal</option>
-                        <option value="BAILE">Baile / Danza</option>
-                        <option value="TEATRO">Teatro</option>
+                        <option value="DANZA">Baile / Danza</option>
+                        <option value="ACTUACION">Teatro</option>
                       </select>
                     </div>
                   </div>
