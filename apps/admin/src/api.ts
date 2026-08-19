@@ -216,10 +216,21 @@ export async function deleteStudentInNeon(studentId: string) {
   const realUserId = await resolveRealUserId(studentId);
   const targetId = realUserId || studentId;
   const safeId = targetId.replace(/'/g, "''");
-  // Clear associated schedules first
-  await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${safeId}';`);
-  // Delete user from users table
-  await executeSql(`DELETE FROM users WHERE id::text = '${safeId}';`);
+  
+  try {
+    // Clear associated records first across all dependent tables
+    await executeSql(`DELETE FROM student_schedules WHERE student_id::text = '${safeId}';`);
+    await executeSql(`DELETE FROM room_bookings WHERE requested_by_student_id::text = '${safeId}' OR approved_by::text = '${safeId}';`);
+    await executeSql(`DELETE FROM attendance WHERE student_id::text = '${safeId}';`);
+    await executeSql(`DELETE FROM student_cast_assignments WHERE student_id::text = '${safeId}';`);
+    await executeSql(`DELETE FROM messages WHERE sender_id::text = '${safeId}' OR receiver_id::text = '${safeId}';`);
+
+    // Delete user from users table
+    await executeSql(`DELETE FROM users WHERE id::text = '${safeId}' OR email = '${safeId}' OR matricula = '${safeId}';`);
+  } catch (err) {
+    console.warn('Error deleting student dependent rows:', err);
+    await executeSql(`DELETE FROM users WHERE id::text = '${safeId}' OR email = '${safeId}' OR matricula = '${safeId}';`);
+  }
 }
 
 // 2. Approve Student in Neon Postgres

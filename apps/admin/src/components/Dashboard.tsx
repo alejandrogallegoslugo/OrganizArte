@@ -81,6 +81,16 @@ const DEFAULT_SLIDES: AnnouncementSlide[] = [
   },
 ];
 
+const EMPTY_FALLBACK_SLIDE: AnnouncementSlide = {
+  id: 'empty-1',
+  tag: 'ARTE & CULTURA TEC',
+  title: 'Espacio para Anuncios y Convocatorias',
+  subtitle: 'Haz clic en "Editar Anuncio" o en el botón "+" para publicar noticias y avisos importantes.',
+  date: 'Tec de Monterrey',
+  location: 'Tec Campus Laguna (Torreón)',
+  bg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({
   students,
   rehearsals,
@@ -94,7 +104,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [slides, setSlides] = useState<AnnouncementSlide[]>(() => {
     try {
       const saved = localStorage.getItem('organizarte_announcements_slides');
-      return saved ? JSON.parse(saved) : DEFAULT_SLIDES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return DEFAULT_SLIDES;
     } catch {
       return DEFAULT_SLIDES;
     }
@@ -127,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Auto-advance banner carousel every 6 seconds
   useEffect(() => {
-    if (slides.length === 0) return;
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
@@ -165,13 +179,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!title.trim()) return;
 
     if (editingSlideId !== null) {
-      setSlides((prev) =>
-        prev.map((s) =>
-          s.id === editingSlideId
-            ? { ...s, tag, title, subtitle, date, location, imageUrl, ctaText, ctaUrl }
-            : s
-        )
+      const updated = slides.map((s) =>
+        String(s.id) === String(editingSlideId)
+          ? { ...s, tag, title, subtitle, date, location, imageUrl, ctaText, ctaUrl }
+          : s
       );
+      setSlides(updated);
+      localStorage.setItem('organizarte_announcements_slides', JSON.stringify(updated));
     } else {
       const newSlide: AnnouncementSlide = {
         id: Date.now(),
@@ -185,24 +199,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
         ctaText,
         ctaUrl,
       };
-      setSlides((prev) => [...prev, newSlide]);
-      setCurrentSlide(slides.length);
+      const updated = [...slides.filter((s) => s.id !== 'empty-1'), newSlide];
+      setSlides(updated);
+      localStorage.setItem('organizarte_announcements_slides', JSON.stringify(updated));
+      setCurrentSlide(updated.length - 1);
     }
 
     setIsSlideModalOpen(false);
   };
 
   const handleDeleteSlide = (id: number | string) => {
-    if (window.confirm('¿Deseas eliminar permanentemente este anuncio destacado?')) {
-      const remaining = slides.filter((s) => String(s.id) !== String(id));
-      const fallback = remaining.length > 0 ? remaining : DEFAULT_SLIDES;
-      setSlides(fallback);
-      setCurrentSlide(0);
-      setIsSlideModalOpen(false);
-    }
+    const remaining = slides.filter((s) => String(s.id) !== String(id));
+    const nextSlides = remaining.length > 0 ? remaining : [EMPTY_FALLBACK_SLIDE];
+    setSlides(nextSlides);
+    localStorage.setItem('organizarte_announcements_slides', JSON.stringify(nextSlides));
+    setCurrentSlide(0);
+    setIsSlideModalOpen(false);
   };
 
-  const activeSlideObj = slides[currentSlide] || DEFAULT_SLIDES[0];
+  const activeSlideObj = slides[currentSlide] || slides[0] || EMPTY_FALLBACK_SLIDE;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '24px' }}>
@@ -217,68 +232,62 @@ export const Dashboard: React.FC<DashboardProps> = ({
           flexDirection: 'column',
           justifyContent: 'space-between',
           position: 'relative',
-          zIndex: 1,
+          backgroundImage: activeSlideObj.imageUrl ? `linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url(${activeSlideObj.imageUrl})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}>
-          {/* Subtle Ambient Background Mesh */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
-            pointerEvents: 'none',
-          }} />
-
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
               <span style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(8px)',
-                color: '#ffffff',
-                fontSize: '0.7rem',
-                fontWeight: 800,
                 padding: '4px 12px',
-                borderRadius: '999px',
-                letterSpacing: '0.06em',
+                borderRadius: '9999px',
+                fontSize: '0.72rem',
+                fontWeight: 800,
                 textTransform: 'uppercase',
+                letterSpacing: '0.05em',
               }}>
                 {activeSlideObj.tag}
               </span>
-              <span style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)', fontWeight: 600 }}>
-                {activeSlideObj.date}
-              </span>
+              {activeSlideObj.date && (
+                <span style={{ fontSize: '0.82rem', opacity: 0.85, fontWeight: 600 }}>
+                  {activeSlideObj.date}
+                </span>
+              )}
             </div>
 
-            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, fontFamily: 'var(--font-heading)', letterSpacing: '-0.03em', lineHeight: 1.2, maxWidth: '720px', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, maxWidth: '780px', lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '10px' }}>
               {activeSlideObj.title}
-            </h1>
-
-            <p style={{ fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.9)', maxWidth: '640px', fontWeight: 500, lineHeight: 1.5 }}>
+            </h2>
+            <p style={{ fontSize: '0.95rem', opacity: 0.9, maxWidth: '650px', lineHeight: 1.5 }}>
               {activeSlideObj.subtitle}
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              {activeSlideObj.ctaUrl && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {activeSlideObj.ctaText && (
                 <a
-                  href={activeSlideObj.ctaUrl}
+                  href={activeSlideObj.ctaUrl || '#'}
                   target="_blank"
                   rel="noreferrer"
                   style={{
                     background: '#ffffff',
-                    color: '#1e3a8a',
-                    fontWeight: 800,
-                    fontSize: '0.85rem',
+                    color: '#0f172a',
                     padding: '10px 20px',
                     borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
                     textDecoration: 'none',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '6px',
                     boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
                   }}
                 >
-                  <span>{activeSlideObj.ctaText || 'Más Información'}</span>
-                  <ExternalLink style={{ width: 16, height: 16 }} />
+                  <span>{activeSlideObj.ctaText}</span>
+                  <ExternalLink style={{ width: 14, height: 14 }} />
                 </a>
               )}
 
@@ -286,12 +295,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onClick={() => handleOpenEditSlideModal(activeSlideObj)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  backdropFilter: 'blur(8px)',
                   color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '10px 18px',
+                  borderRadius: '12px',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
-                  padding: '8px 14px',
-                  borderRadius: '10px',
+                  fontSize: '0.85rem',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -303,20 +313,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </button>
             </div>
 
-            {/* Carousel Navigation Indicators */}
+            {/* Carousel Dots & Add Button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {slides.map((s, idx) => (
+              {slides.map((_, idx) => (
                 <button
-                  key={s.id}
+                  key={idx}
                   onClick={() => setCurrentSlide(idx)}
                   style={{
-                    width: idx === currentSlide ? '28px' : '8px',
+                    width: currentSlide === idx ? '24px' : '8px',
                     height: '8px',
-                    borderRadius: '999px',
-                    background: idx === currentSlide ? '#ffffff' : 'rgba(255, 255, 255, 0.4)',
+                    borderRadius: '4px',
+                    background: currentSlide === idx ? '#ffffff' : 'rgba(255,255,255,0.4)',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                   }}
                 />
               ))}
@@ -324,19 +334,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 onClick={handleOpenNewSlideModal}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  border: 'none',
-                  color: '#ffffff',
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  marginLeft: '8px',
+                  marginLeft: '6px',
                 }}
-                title="Agregar nuevo anuncio"
+                title="Publicar Nuevo Anuncio"
               >
                 <Plus style={{ width: 16, height: 16 }} />
               </button>
@@ -345,76 +355,83 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* 2. Executive Metric Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+      {/* 2. Executive KPI Cards Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         {/* KPI 1: Active Students */}
         <div
-          onClick={() => setActiveTab('approvals')}
           className="executive-card"
-          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          onClick={() => setActiveTab('approvals')}
+          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Alumnos Activos
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              ALUMNOS ACTIVOS
             </span>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users style={{ width: 20, height: 20 }} />
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
               {activeStudents.length}
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--emerald-accent)', fontWeight: 700, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '0.75rem', color: 'var(--emerald-accent)', fontWeight: 700 }}>
               <TrendingUp style={{ width: 14, height: 14 }} />
-              <span>+100% Inscripciones Activas</span>
+              <span>100% Inscripciones Activas</span>
             </div>
           </div>
         </div>
 
         {/* KPI 2: Pending Approvals */}
         <div
-          onClick={() => setActiveTab('approvals')}
           className="executive-card"
-          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          onClick={() => setActiveTab('approvals')}
+          style={{
+            padding: '24px',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            border: pendingCount > 0 ? '1px solid rgba(245, 158, 11, 0.4)' : undefined,
+          }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Solicitudes Pendientes
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SOLICITUDES PENDIENTES
             </span>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.1)', color: 'var(--rose-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock style={{ width: 20, height: 20 }} />
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: pendingCount > 0 ? 'var(--rose-accent)' : 'var(--text-main)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: pendingCount > 0 ? '#f59e0b' : 'var(--text-main)', lineHeight: 1 }}>
               {pendingCount}
             </div>
-            <div style={{ fontSize: '0.78rem', color: pendingCount > 0 ? 'var(--rose-accent)' : 'var(--text-muted)', fontWeight: 700, marginTop: '6px' }}>
-              {pendingCount > 0 ? '⚠️ Requiere Revisión Directiva' : '✓ Todo Aprobado'}
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>
+              {pendingCount > 0 ? '⚠️ Requieren validación' : '✓ Todo Aprobado'}
             </div>
           </div>
         </div>
 
         {/* KPI 3: Rehearsals Scheduled */}
         <div
-          onClick={() => setActiveTab('rehearsals')}
           className="executive-card"
-          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          onClick={() => setActiveTab('rehearsals')}
+          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Ensayos Programados
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              ENSAYOS PROGRAMADOS
             </span>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--violet-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar style={{ width: 20, height: 20 }} />
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#ede9fe', color: '#6d28d9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Calendar style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
               {rehearsals.length}
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--violet-accent)', fontWeight: 700, marginTop: '6px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, marginTop: '6px' }}>
               Agenda General de Convocatorias
             </div>
           </div>
@@ -422,97 +439,73 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* KPI 4: Room Bookings */}
         <div
-          onClick={() => setActiveTab('rooms')}
           className="executive-card"
-          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          onClick={() => setActiveTab('rooms')}
+          style={{ padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Pases de Salón DAE
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              PASES DE SALÓN DAE
             </span>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.1)', color: 'var(--cyan-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building2 style={{ width: 20, height: 20 }} />
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#cffafe', color: '#0e7490', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building2 style={{ width: 18, height: 18 }} />
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>
               {bookings.length}
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--cyan-accent)', fontWeight: 700, marginTop: '6px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>
               Préstamos de Cubículos & Salones
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Main Action Hub: Availability Matrix & Rehearsals Overview */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-        {/* Quick Access Availability Card */}
-        <div className="executive-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '20px' }}>
+      {/* 3. Quick Action Modules Banner Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        {/* Availability Heatmap Module Card */}
+        <div className="executive-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div className="badge badge-blue" style={{ marginBottom: '12px' }}>
-              MATRIZ DE DISPONIBILIDAD
-            </div>
+            <span className="badge badge-blue" style={{ marginBottom: '12px' }}>MATRIZ DE DISPONIBILIDAD</span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '8px' }}>
               Horarios & Cruces de Clases
             </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '20px' }}>
               Analiza los horarios cargados por los alumnos con sensibilidad de **1 Hora** y **30 Minutos**, detectando empalmes para convocatorias.
             </p>
           </div>
-
-          <button
-            onClick={() => setActiveTab('availability')}
-            className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
-          >
+          <button onClick={() => setActiveTab('availability')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
             <span>Ver Matriz de Disponibilidad</span>
             <ChevronRight style={{ width: 16, height: 16 }} />
           </button>
         </div>
 
-        {/* Quick Access Upcoming Rehearsals */}
-        <div className="executive-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '20px' }}>
+        {/* Rehearsal Scheduler Module Card */}
+        <div className="executive-card" style={{ padding: '28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div className="badge badge-purple" style={{ marginBottom: '12px' }}>
-              PRÓXIMAS CONVOCATORIAS
-            </div>
+            <span className="badge badge-purple" style={{ marginBottom: '12px' }}>PRÓXIMAS CONVOCATORIAS</span>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '8px' }}>
               Ensayos & Pases de Asistencia
             </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '20px' }}>
               Genera códigos QR de pase de lista y asigna ensayos por secciones (Sopranos, Trompetas, Ensamble Tutti).
             </p>
           </div>
-
-          <button
-            onClick={() => setActiveTab('rehearsals')}
-            className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', padding: '12px', background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' }}
-          >
+          <button onClick={() => setActiveTab('rehearsals')} className="btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
             <span>Programar Convocatoria</span>
             <ChevronRight style={{ width: 16, height: 16 }} />
           </button>
         </div>
       </div>
 
-      {/* Slide Modal Editor */}
+      {/* 4. Edit Announcement Slide Modal */}
       {isSlideModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 500,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-        }}>
-          <div className="executive-card" style={{ width: '100%', maxWidth: '560px', padding: '28px', background: 'var(--bg-surface)' }}>
+        <div className="modal-backdrop">
+          <div className="executive-card" style={{ width: '100%', maxWidth: '560px', padding: '32px', background: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
-                {editingSlideId ? 'Editar Anuncio Destacado' : 'Crear Nuevo Anuncio'}
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800 }}>
+                {editingSlideId !== null ? 'Editar Anuncio Destacado' : 'Publicar Nuevo Anuncio'}
               </h3>
               <button onClick={() => setIsSlideModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <X style={{ width: 20, height: 20 }} />
@@ -528,7 +521,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   type="text"
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}
-                  placeholder="Ej: EVENTO ARTE & CULTURA"
+                  placeholder="Ej: EVENTO ARTE & CULTURA, AUDICIONES, CONCIERTO"
                   style={{ width: '100%', padding: '10px 14px' }}
                 />
               </div>
@@ -539,10 +532,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </label>
                 <input
                   type="text"
+                  required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ej: Ceremonia de Bienvenida Generación 13"
-                  required
+                  placeholder="Ej: Ceremonia de Bienvenida 2026"
                   style={{ width: '100%', padding: '10px 14px' }}
                 />
               </div>
@@ -554,9 +547,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <textarea
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="Descripción concisa..."
+                  placeholder="Describe brevemente la información del anuncio..."
                   rows={3}
-                  style={{ width: '100%', padding: '10px 14px' }}
+                  style={{ width: '100%', padding: '10px 14px', resize: 'none' }}
                 />
               </div>
 
@@ -573,6 +566,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     style={{ width: '100%', padding: '10px 14px' }}
                   />
                 </div>
+
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
                     UBICACIÓN
