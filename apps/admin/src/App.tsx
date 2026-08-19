@@ -80,7 +80,7 @@ export const App: React.FC = () => {
   const loadNeonData = async () => {
     setLoadingDb(true);
     try {
-      const [stData, schData, rmData, bkData, rhData, sgData, cpData, crData] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchLiveStudents(),
         fetchLiveSchedules(),
         fetchLiveRooms(),
@@ -91,19 +91,14 @@ export const App: React.FC = () => {
         fetchLiveCastRoles(),
       ]);
 
-      setStudents(stData);
-      setSchedules(schData);
-      setRooms(rmData);
-      setBookings(bkData);
-      setRehearsals(rhData);
-      setSongs(sgData);
-
-      if (cpData && cpData.length > 0) {
-        setCompanies(cpData);
-      }
-      if (crData && crData.length > 0) {
-        setCastShows(crData);
-      }
+      if (results[0].status === 'fulfilled' && results[0].value) setStudents(results[0].value);
+      if (results[1].status === 'fulfilled' && results[1].value) setSchedules(results[1].value);
+      if (results[2].status === 'fulfilled' && results[2].value) setRooms(results[2].value);
+      if (results[3].status === 'fulfilled' && results[3].value) setBookings(results[3].value);
+      if (results[4].status === 'fulfilled' && results[4].value) setRehearsals(results[4].value);
+      if (results[5].status === 'fulfilled' && results[5].value) setSongs(results[5].value);
+      if (results[6].status === 'fulfilled' && results[6].value && results[6].value.length > 0) setCompanies(results[6].value);
+      if (results[7].status === 'fulfilled' && results[7].value && results[7].value.length > 0) setCastShows(results[7].value);
     } catch (err) {
       console.error('Error fetching Neon database:', err);
     } finally {

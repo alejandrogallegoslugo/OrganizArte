@@ -193,11 +193,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleDeleteSlide = (id: number | string) => {
-    if (confirm('¿Eliminar esta tarjeta de anuncio?')) {
-      setSlides((prev) => prev.filter((s) => s.id !== id));
-      if (currentSlide >= slides.length - 1) {
-        setCurrentSlide(Math.max(0, slides.length - 2));
-      }
+    if (window.confirm('¿Deseas eliminar permanentemente este anuncio destacado?')) {
+      const remaining = slides.filter((s) => String(s.id) !== String(id));
+      const fallback = remaining.length > 0 ? remaining : DEFAULT_SLIDES;
+      setSlides(fallback);
+      setCurrentSlide(0);
+      setIsSlideModalOpen(false);
     }
   };
 
@@ -587,14 +588,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--border-color)', marginTop: '8px' }}>
-                {editingSlideId && (
+                {editingSlideId !== null && (
                   <button
                     type="button"
                     onClick={() => handleDeleteSlide(editingSlideId)}
-                    style={{ background: 'none', border: 'none', color: 'var(--rose-accent)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    className="btn-danger"
                   >
                     <Trash2 style={{ width: 16, height: 16 }} />
-                    <span>Eliminar</span>
+                    <span>Eliminar Anuncio</span>
                   </button>
                 )}
 

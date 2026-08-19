@@ -250,31 +250,23 @@ export async function rejectStudentInNeon(studentId: string) {
 
 // 3b. Fetch & Save Real Student Schedules in Neon DB
 export async function fetchLiveSchedules(): Promise<StudentSchedule[]> {
-  // Migration: Automatically resolve any legacy matricula or email references to permanent users.id UUIDs
   try {
-    await executeSql(`
-      UPDATE student_schedules ss
-      SET student_id = u.id::text
-      FROM users u
-      WHERE (ss.student_id = u.matricula OR ss.student_id = u.email)
-        AND ss.student_id != u.id::text;
-    `);
-  } catch (e) {
-    console.warn('Schedule UUID migration notice:', e);
+    const rows = await executeSql('SELECT * FROM student_schedules ORDER BY day_of_week ASC');
+    return rows.map((r: any) => ({
+      id: r.id,
+      studentId: String(r.student_id),
+      dayOfWeek: r.day_of_week,
+      startTime: r.start_time,
+      endTime: r.end_time,
+      courseName: r.course_name,
+      isAcademicClass: r.is_academic_class ?? true,
+      periodName: r.period_name || 'Semestre Agosto - Diciembre 2026',
+      validUntil: r.valid_until || '2026-12-15',
+    }));
+  } catch (err) {
+    console.warn('Error fetching live schedules:', err);
+    return [];
   }
-
-  const rows = await executeSql('SELECT * FROM student_schedules ORDER BY day_of_week ASC');
-  return rows.map((r: any) => ({
-    id: r.id,
-    studentId: r.student_id,
-    dayOfWeek: r.day_of_week,
-    startTime: r.start_time,
-    endTime: r.end_time,
-    courseName: r.course_name,
-    isAcademicClass: r.is_academic_class ?? true,
-    periodName: r.period_name || 'Semestre Agosto - Diciembre 2026',
-    validUntil: r.valid_until || '2026-12-15',
-  }));
 }
 
 export async function saveStudentScheduleCourseInNeon(
