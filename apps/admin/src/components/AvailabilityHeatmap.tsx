@@ -30,6 +30,11 @@ import {
   Layers,
   LayoutGrid,
   List,
+  Music,
+  Mic,
+  Activity,
+  Drama,
+  Wrench,
 } from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
@@ -95,11 +100,11 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 }) => {
   const activeStudents = students.filter((s) => s.status === 'ACTIVE');
 
+  // Area / Discipline Filter: 'ALL', 'MUSICA', 'CANTO', 'DANZA', 'ACTUACION', 'STAFF'
+  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
+
   // Selected Student View Filter: 'ALL' (Heatmap) vs Specific Student ID (Individual Visual Grid)
   const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
-
-  // Discipline Filter: 'ALL', 'MUSICA', 'CANTO', 'DANZA', 'ACTUACION'
-  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
 
   // Display Mode: 'grid' (Visual Weekly Calendar) vs 'table' (List Table)
   const [displayMode, setDisplayMode] = useState<'grid' | 'table'>('grid');
@@ -129,10 +134,15 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
   const activeTimeSlots = timeGranularity === 'HOURLY' ? HOURLY_SLOTS : HALF_HOURLY_SLOTS;
 
-  // Filter students based on discipline filter
+  // Filter active students based on the selected area / discipline filter
   const filteredActiveStudents = activeStudents.filter((s) => {
     if (disciplineFilter === 'ALL') return true;
-    return s.discipline === disciplineFilter;
+    if (disciplineFilter === 'MUSICA') return s.discipline === 'MUSICA';
+    if (disciplineFilter === 'CANTO') return s.discipline === 'CANTO';
+    if (disciplineFilter === 'DANZA') return s.discipline === 'DANZA' || s.discipline === 'BAILE';
+    if (disciplineFilter === 'ACTUACION') return s.discipline === 'ACTUACION' || s.discipline === 'TEATRO';
+    if (disciplineFilter === 'STAFF') return s.discipline === 'STAFF' || s.discipline === 'PRODUCCION';
+    return true;
   });
 
   // Selected student object (if a single student is selected)
@@ -143,6 +153,19 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     if (!currentIndividualStudent) return false;
     return sch.studentId === currentIndividualStudent.id;
   });
+
+  // Count active students by area for badges
+  const countByArea = (area: string) => {
+    if (area === 'ALL') return activeStudents.length;
+    return activeStudents.filter((s) => {
+      if (area === 'MUSICA') return s.discipline === 'MUSICA';
+      if (area === 'CANTO') return s.discipline === 'CANTO';
+      if (area === 'DANZA') return s.discipline === 'DANZA' || s.discipline === 'BAILE';
+      if (area === 'ACTUACION') return s.discipline === 'ACTUACION' || s.discipline === 'TEATRO';
+      if (area === 'STAFF') return s.discipline === 'STAFF' || s.discipline === 'PRODUCCION';
+      return false;
+    }).length;
+  };
 
   // Compute Heatmap Matrix Occupancy for Collective Mode
   const getOccupancyForSlot = (day: string, timeSlot: string) => {
@@ -327,12 +350,12 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <span className="badge badge-blue">MATRIZ DE HORARIOS ESCOLARES</span>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                {activeStudents.length} Alumnos en Sistema
+                {filteredActiveStudents.length} Alumnos en este filtro
               </span>
             </div>
             <h2 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
               {selectedStudentFilter === 'ALL'
-                ? 'Disponibilidad General del Elenco'
+                ? `Disponibilidad General ${disciplineFilter !== 'ALL' ? `• ${disciplineFilter}` : '• Todo el Elenco'}`
                 : `Horario Semanal: ${currentIndividualStudent?.name}`}
             </h2>
           </div>
@@ -368,17 +391,81 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
           )}
         </div>
 
-        {/* 2. DYNAMIC FILTER TOOLBAR */}
+        {/* 2. PROMINENT AREA / DISCIPLINE FILTERS (ALWAYS VISIBLE) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              FILTRAR POR ÁREA O DISCIPLINA ARTÍSTICA:
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>
+              {disciplineFilter === 'ALL' ? 'Mostrando todas las áreas' : `Filtrando por ${disciplineFilter}`}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {[
+              { id: 'ALL', label: '🌐 Todas las Áreas', count: countByArea('ALL') },
+              { id: 'MUSICA', label: '🎺 Músicos', count: countByArea('MUSICA') },
+              { id: 'CANTO', label: '🎤 Vocal / Canto', count: countByArea('CANTO') },
+              { id: 'DANZA', label: '💃 Danza / Baile', count: countByArea('DANZA') },
+              { id: 'ACTUACION', label: '🎭 Actuación / Teatro', count: countByArea('ACTUACION') },
+              { id: 'STAFF', label: '🛠️ Staff / Producción', count: countByArea('STAFF') },
+            ].map((disc) => {
+              const isSelected = disciplineFilter === disc.id;
+              return (
+                <button
+                  key={disc.id}
+                  onClick={() => {
+                    setDisciplineFilter(disc.id);
+                    // If viewing a student not in this discipline, reset to ALL
+                    if (selectedStudentFilter !== 'ALL') {
+                      setSelectedStudentFilter('ALL');
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                    background: isSelected ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' : 'var(--bg-dark)',
+                    color: isSelected ? '#ffffff' : 'var(--text-main)',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: isSelected ? '0 4px 12px var(--primary-glow)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{disc.label}</span>
+                  <span style={{
+                    background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--border-color)',
+                    color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    padding: '2px 7px',
+                    borderRadius: '999px',
+                  }}>
+                    {disc.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. DYNAMIC STUDENT SELECTOR & DISPLAY CONTROLS */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
           {/* Student Filter Selector Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 300px', maxWidth: '480px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 320px', maxWidth: '520px' }}>
             <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: selectedStudentFilter === 'ALL' ? 'var(--primary-light)' : '#dbeafe', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {selectedStudentFilter === 'ALL' ? <Users style={{ width: 18, height: 18 }} /> : <UserCheck style={{ width: 18, height: 18 }} />}
             </div>
 
             <div style={{ width: '100%' }}>
               <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
-                VISUALIZAR HORARIO DE:
+                SELECCIONAR MODO / ALUMNO:
               </label>
               <select
                 value={selectedStudentFilter}
@@ -395,50 +482,17 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
                   cursor: 'pointer',
                 }}
               >
-                <option value="ALL">👥 Todos los Alumnos (Mapa de Calor General)</option>
-                <optgroup label="── Ver Horario Individual de Alumno ──">
-                  {activeStudents.map((s) => (
+                <option value="ALL">👥 Mapa de Calor General ({filteredActiveStudents.length} alumnos)</option>
+                <optgroup label="── Ver Horario Gráfico Individual ──">
+                  {filteredActiveStudents.map((s) => (
                     <option key={s.id} value={s.id}>
-                      👤 {s.name} ({s.matricula}) — {s.discipline}
+                      👤 {s.name} ({s.matricula}) — {s.discipline} ({s.section})
                     </option>
                   ))}
                 </optgroup>
               </select>
             </div>
           </div>
-
-          {/* Quick Filter by Discipline (for general map) */}
-          {selectedStudentFilter === 'ALL' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginRight: '4px' }}>
-                Disciplina:
-              </span>
-              {[
-                { id: 'ALL', label: 'Todas' },
-                { id: 'MUSICA', label: '🎺 Música' },
-                { id: 'CANTO', label: '🎤 Canto' },
-                { id: 'DANZA', label: '💃 Danza' },
-                { id: 'ACTUACION', label: '🎭 Actuación' },
-              ].map((disc) => (
-                <button
-                  key={disc.id}
-                  onClick={() => setDisciplineFilter(disc.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: disciplineFilter === disc.id ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                    background: disciplineFilter === disc.id ? 'var(--primary-light)' : 'var(--bg-dark)',
-                    color: disciplineFilter === disc.id ? 'var(--primary)' : 'var(--text-muted)',
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {disc.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Granularity & View Mode Toggles */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
@@ -499,7 +553,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       </div>
 
-      {/* 3. VISUAL WEEKLY SCHEDULE GRID (FOR BOTH GENERAL MAP & INDIVIDUAL STUDENT) */}
+      {/* 4. VISUAL WEEKLY SCHEDULE GRID (FOR BOTH GENERAL MAP & INDIVIDUAL STUDENT) */}
       {(selectedStudentFilter === 'ALL' || displayMode === 'grid') && (
         <div className="executive-card" style={{ padding: '24px', overflowX: 'auto' }}>
           {/* Header Description */}
@@ -507,7 +561,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
             <div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
                 {selectedStudentFilter === 'ALL'
-                  ? 'Matriz Semanal de Compatibilidad (Lunes a Sábado)'
+                  ? `Matriz Semanal de Compatibilidad • ${disciplineFilter === 'ALL' ? 'Todas las Áreas' : disciplineFilter} (${filteredActiveStudents.length} alumnos)`
                   : `Horario Gráfico de ${currentIndividualStudent?.name} (${individualSchedules.length} materias)`}
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -698,7 +752,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* 4. TABLE VIEW (WHEN 'LISTA' IS TOGGLED ON INDIVIDUAL STUDENT) */}
+      {/* 5. TABLE VIEW (WHEN 'LISTA' IS TOGGLED ON INDIVIDUAL STUDENT) */}
       {selectedStudentFilter !== 'ALL' && displayMode === 'table' && (
         <div className="executive-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -766,7 +820,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* 5. DETAILED SLOT AVAILABILITY MODAL (CLICK ON HEATMAP CELL) */}
+      {/* 6. DETAILED SLOT AVAILABILITY MODAL (CLICK ON HEATMAP CELL) */}
       {slotDetail && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', padding: 0, overflow: 'hidden' }}>
@@ -1004,7 +1058,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* 6. MULTI-DAY BULK BLOCKING MODAL */}
+      {/* 7. MULTI-DAY BULK BLOCKING MODAL */}
       {showAddClassModal && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '520px', padding: '28px', background: 'var(--bg-surface)' }}>
@@ -1133,7 +1187,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
-      {/* 7. GEMINI OCR UPLOAD MODAL */}
+      {/* 8. GEMINI OCR UPLOAD MODAL */}
       {showUploadModal && (
         <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', background: 'var(--bg-surface)' }}>
