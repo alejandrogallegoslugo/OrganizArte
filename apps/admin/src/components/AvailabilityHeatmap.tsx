@@ -1,5 +1,33 @@
 import React, { useState } from 'react';
-import { CalendarClock, Sparkles, Upload, FileText, CheckCircle2, Clock, Eye, AlertCircle, UserCheck, Plus, Edit2, Trash2, BookOpen, Calendar, Save, ShieldAlert, CheckCircle, Filter, CheckSquare, Square, RefreshCw, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import {
+  CalendarClock,
+  Sparkles,
+  Upload,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Eye,
+  AlertCircle,
+  UserCheck,
+  Plus,
+  Edit2,
+  Trash2,
+  BookOpen,
+  Calendar,
+  Save,
+  ShieldAlert,
+  CheckCircle,
+  Filter,
+  CheckSquare,
+  Square,
+  RefreshCw,
+  SlidersHorizontal,
+  ChevronRight,
+  X,
+  User,
+  Users,
+  Search,
+} from 'lucide-react';
 import { StudentProfile, StudentSchedule, parseScheduleImageWithGemini } from '../shared';
 
 interface AvailabilityHeatmapProps {
@@ -9,6 +37,14 @@ interface AvailabilityHeatmapProps {
   onSaveScheduleCourse?: (studentId: string, dayOfWeek: string, startTime: string, endTime: string, courseName: string, periodName?: string, validUntil?: string) => void;
   onDeleteScheduleCourse?: (scheduleId: string) => void;
   onClearStudentSchedules?: (studentId: string) => void;
+}
+
+interface SlotDetailModalData {
+  day: string;
+  timeSlot: string;
+  freeStudents: StudentProfile[];
+  busyStudents: { student: StudentProfile; courseName: string; startTime: string; endTime: string }[];
+  percentageFree: number;
 }
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -45,13 +81,13 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
   // Time Granularity State: 1 Hour vs 30 Minutes
   const [timeGranularity, setTimeGranularity] = useState<'HOURLY' | 'HALF_HOURLY'>('HOURLY');
 
-  // Director Validation State (persisted in localStorage so approving hides it permanently)
-  const [isScheduleApproved, setIsScheduleApproved] = useState<boolean>(() => {
-    return localStorage.getItem('organizarte_schedule_approved') === 'true';
-  });
-
   // View Mode: 'heatmap' vs 'inspector'
   const [activeSubTab, setActiveSubTab] = useState<'heatmap' | 'inspector'>('heatmap');
+
+  // Interactive Slot Detail Modal State
+  const [slotDetail, setSlotDetail] = useState<SlotDetailModalData | null>(null);
+  const [slotFilterTab, setSlotFilterTab] = useState<'all' | 'free' | 'busy'>('all');
+  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
 
   // Real File Upload & Gemini OCR State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -98,10 +134,43 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     return { busyCount, freeCount, percentageFree, total: activeStudents.length };
   };
 
-  const handleApproveScheduleToggle = () => {
-    const nextState = !isScheduleApproved;
-    setIsScheduleApproved(nextState);
-    localStorage.setItem('organizarte_schedule_approved', String(nextState));
+  // Open Interactive Slot Details by Student Name
+  const handleCellClick = (day: string, slot: string) => {
+    const freeStudents: StudentProfile[] = [];
+    const busyStudents: { student: StudentProfile; courseName: string; startTime: string; endTime: string }[] = [];
+
+    activeStudents.forEach((student) => {
+      const studentSch = schedules.filter((sch) => sch.studentId === student.id);
+      const overlapping = studentSch.find((sch) => {
+        if (sch.dayOfWeek.toLowerCase() !== day.toLowerCase()) return false;
+        return slot >= sch.startTime && slot < sch.endTime;
+      });
+
+      if (overlapping) {
+        busyStudents.push({
+          student,
+          courseName: overlapping.courseName,
+          startTime: overlapping.startTime,
+          endTime: overlapping.endTime,
+        });
+      } else {
+        freeStudents.push(student);
+      }
+    });
+
+    const percentageFree = activeStudents.length > 0
+      ? Math.round((freeStudents.length / activeStudents.length) * 100)
+      : 100;
+
+    setSlotDetail({
+      day,
+      timeSlot: slot,
+      freeStudents,
+      busyStudents,
+      percentageFree,
+    });
+    setSlotFilterTab('all');
+    setDisciplineFilter('ALL');
   };
 
   const handleToggleDay = (day: string) => {
@@ -189,6 +258,23 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
     reader.readAsDataURL(file);
   };
 
+  // Filtered Students for the Modal
+  const getFilteredSlotStudents = () => {
+    if (!slotDetail) return { free: [], busy: [] };
+
+    let free = slotDetail.freeStudents;
+    let busy = slotDetail.busyStudents;
+
+    if (disciplineFilter !== 'ALL') {
+      free = free.filter((s) => s.discipline === disciplineFilter);
+      busy = busy.filter((b) => b.student.discipline === disciplineFilter);
+    }
+
+    return { free, busy };
+  };
+
+  const { free: modalFilteredFree, busy: modalFilteredBusy } = getFilteredSlotStudents();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px' }}>
       {/* Top Header & View Mode Switcher */}
@@ -258,11 +344,11 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
       {/* SUBTAB 1: HEATMAP GRID */}
       {activeSubTab === 'heatmap' && (
         <div className="executive-card" style={{ padding: '24px', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Porcentaje de Disponibilidad Libre</h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                Celda verde indica mayor disponibilidad libre de alumnos para agendar ensayos.
+                👉 <strong>Haz clic en cualquier bloque horario</strong> para ver la lista con nombres de alumnos disponibles y ocupados con clase.
               </p>
             </div>
 
@@ -314,18 +400,32 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
                     return (
                       <td key={day} style={{ textAlign: 'center', padding: '6px' }}>
-                        <div style={{
-                          background: bgColor,
-                          color: textColor,
-                          border: `1px solid ${borderColor}`,
-                          borderRadius: '8px',
-                          padding: '8px 4px',
-                          fontSize: '0.8rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                        }} title={`${occ.freeCount} de ${occ.total} alumnos libres (${occ.percentageFree}%)`}>
+                        <div
+                          onClick={() => handleCellClick(day, slot)}
+                          style={{
+                            background: bgColor,
+                            color: textColor,
+                            border: `1px solid ${borderColor}`,
+                            borderRadius: '10px',
+                            padding: '8px 4px',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.04)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                          }}
+                          title={`Clic para ver quiénes están libres u ocupados el ${day} a las ${slot}`}
+                        >
                           {occ.percentageFree}% Libre
-                          <div style={{ fontSize: '0.65rem', opacity: 0.8, fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700, marginTop: '2px' }}>
                             {occ.freeCount}/{occ.total} alumnos
                           </div>
                         </div>
@@ -472,19 +572,274 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
         </div>
       )}
 
+      {/* DETAILED SLOT AVAILABILITY MODAL (CLICK ON HEATMAP CELL) */}
+      {slotDetail && (
+        <div className="modal-backdrop">
+          <div className="executive-card" style={{ width: '100%', maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', padding: 0, overflow: 'hidden' }}>
+            {/* Modal Header */}
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-card)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span className="badge badge-blue">DISPONIBILIDAD DETALLADA</span>
+                  <span style={{
+                    background: slotDetail.percentageFree >= 80 ? '#dcfce7' : slotDetail.percentageFree >= 40 ? '#fef9c3' : '#ffe4e6',
+                    color: slotDetail.percentageFree >= 80 ? '#166534' : slotDetail.percentageFree >= 40 ? '#854d0e' : '#9f1239',
+                    padding: '3px 8px',
+                    borderRadius: '999px',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                  }}>
+                    {slotDetail.percentageFree}% Libre ({slotDetail.freeStudents.length} de {activeStudents.length} alumnos)
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.025em' }}>
+                  {slotDetail.day} a las {slotDetail.timeSlot} hs
+                </h3>
+              </div>
+
+              <button
+                onClick={() => setSlotDetail(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
+              >
+                <X style={{ width: 22, height: 22 }} />
+              </button>
+            </div>
+
+            {/* Filter Bar */}
+            <div style={{ padding: '12px 28px', background: 'var(--bg-dark)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              {/* Filter Tabs */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => setSlotFilterTab('all')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: slotFilterTab === 'all' ? 'var(--primary)' : 'transparent',
+                    color: slotFilterTab === 'all' ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Todos ({activeStudents.length})
+                </button>
+                <button
+                  onClick={() => setSlotFilterTab('free')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: slotFilterTab === 'free' ? '#10b981' : 'transparent',
+                    color: slotFilterTab === 'free' ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🟢 Libres ({slotDetail.freeStudents.length})
+                </button>
+                <button
+                  onClick={() => setSlotFilterTab('busy')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: slotFilterTab === 'busy' ? '#f43f5e' : 'transparent',
+                    color: slotFilterTab === 'busy' ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🔴 Con Clase ({slotDetail.busyStudents.length})
+                </button>
+              </div>
+
+              {/* Discipline Filter */}
+              <select
+                value={disciplineFilter}
+                onChange={(e) => setDisciplineFilter(e.target.value)}
+                style={{ padding: '6px 12px', fontSize: '0.78rem', fontWeight: 700 }}
+              >
+                <option value="ALL">Todas las Disciplinas</option>
+                <option value="MUSICA">🎺 Música</option>
+                <option value="CANTO">🎤 Canto</option>
+                <option value="DANZA">💃 Danza</option>
+                <option value="ACTUACION">🎭 Actuación</option>
+                <option value="STAFF">🛠️ Staff</option>
+              </select>
+            </div>
+
+            {/* Modal Body: Scrollable Student Cards List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* 1. FREE STUDENTS SECTION */}
+              {(slotFilterTab === 'all' || slotFilterTab === 'free') && modalFilteredFree.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🟢 ALUMNOS DISPONIBLES ({modalFilteredFree.length})
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                    {modalFilteredFree.map((student) => (
+                      <div
+                        key={student.id}
+                        style={{
+                          background: 'var(--bg-card)',
+                          border: '1px solid rgba(16, 185, 129, 0.25)',
+                          borderRadius: '12px',
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          boxShadow: 'var(--shadow-sm)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
+                            {student.name.charAt(0)}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {student.name}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 700 }}>{student.matricula}</span> • {student.discipline} ({student.section})
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setSelectedStudentId(student.id);
+                            setActiveSubTab('inspector');
+                            setSlotDetail(null);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            flexShrink: 0,
+                          }}
+                          title="Inspeccionar horario completo"
+                        >
+                          Ver Horario →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. BUSY STUDENTS SECTION */}
+              {(slotFilterTab === 'all' || slotFilterTab === 'busy') && modalFilteredBusy.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: slotFilterTab === 'all' ? '12px' : '0' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🔴 ALUMNOS CON CLASE / OCUPADOS ({modalFilteredBusy.length})
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                    {modalFilteredBusy.map((item) => (
+                      <div
+                        key={item.student.id}
+                        style={{
+                          background: 'var(--bg-card)',
+                          border: '1px solid rgba(244, 63, 94, 0.25)',
+                          borderRadius: '12px',
+                          padding: '12px 16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                          boxShadow: 'var(--shadow-sm)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#ffe4e6', color: '#9f1239', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem', flexShrink: 0 }}>
+                              {item.student.name.charAt(0)}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {item.student.name}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 700 }}>{item.student.matricula}</span> • {item.student.discipline}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setSelectedStudentId(item.student.id);
+                              setActiveSubTab('inspector');
+                              setSlotDetail(null);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--primary)',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              flexShrink: 0,
+                            }}
+                            title="Inspeccionar horario completo"
+                          >
+                            Ver Horario →
+                          </button>
+                        </div>
+
+                        {/* Busy Course Details Badge */}
+                        <div style={{
+                          background: 'rgba(244, 63, 94, 0.08)',
+                          borderRadius: '8px',
+                          padding: '6px 10px',
+                          fontSize: '0.75rem',
+                          color: '#e11d48',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}>
+                          <BookOpen style={{ width: 14, height: 14, flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.courseName} ({item.startTime} - {item.endTime} hs)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {modalFilteredFree.length === 0 && modalFilteredBusy.length === 0 && (
+                <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <Users style={{ width: 36, height: 36, margin: '0 auto 8px auto', opacity: 0.4 }} />
+                  <div style={{ fontWeight: 700 }}>No hay alumnos que coincidan con los filtros seleccionados</div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 28px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-card)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setSlotDetail(null)} className="btn-primary">
+                Cerrar Detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Multi-day Bulk Blocking Modal */}
       {showAddClassModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 500,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-        }}>
+        <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '520px', padding: '28px', background: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
@@ -613,17 +968,7 @@ export const AvailabilityHeatmap: React.FC<AvailabilityHeatmapProps> = ({
 
       {/* Gemini OCR Upload Modal */}
       {showUploadModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 500,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-        }}>
+        <div className="modal-backdrop">
           <div className="executive-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', background: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-color)' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
